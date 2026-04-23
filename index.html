@@ -1,799 +1,712 @@
-html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Betrod</title>
-    <style>
-        body {
-            background-color: white;
-            color: black;
-        }
-    </style>
-</head>
-<body>
-    <h1>Welcome to Betrod!</h1>
-</body>
-</html><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Betika + Betrod | Sports Betting & Casino</title>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
-    <!-- React & ReactDOM from CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.development.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js"></script>
-    <!-- Babel for JSX in browser -->
-    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AERO CRASH | Turbo Multiplier Game · Like Aviator & JetX</title>
     <style>
+        /* ---------- GLOBAL STYLES & RESET ---------- */
         * {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
+
         body {
-            background: #0a0f0d;
-            font-family: 'Barlow Condensed', 'Oswald', sans-serif;
-            overflow-x: hidden;
+            background: radial-gradient(ellipse at 30% 20%, #0a0a1a, #020108);
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'Poppins', 'Inter', system-ui, sans-serif;
+            transition: filter 0.2s, background 0.2s;
         }
-        ::-webkit-scrollbar {
-            width: 0;
-            height: 0;
+
+        /* Light mode */
+        body.light-mode {
+            background: #f0f2f5;
         }
-        .hov { transition: all 0.15s; cursor: pointer; }
-        .hov:hover { filter: brightness(1.2); }
-        .stab { transition: all 0.2s; cursor: pointer; }
-        .stab:active { transform: scale(0.95); }
-        .nav { transition: all 0.2s; cursor: pointer; }
-        .bslide { animation: slideUp 0.3s ease; }
-        .plive { animation: pulse 1.5s infinite; }
-        .mcard { transition: background 0.15s; }
-        .mcard:hover { background: #1a2e22 !important; }
-        .gcard { transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
-        .gcard:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.6); }
-        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-        .fin { animation: fadeIn 0.2s ease forwards; }
-        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
-        input::placeholder { opacity: 0.4; }
+        body.light-mode .game-container,
+        body.light-mode .menu-bar,
+        body.light-mode .sidebar {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            border-color: #ffb347;
+            color: #1a1a2e;
+        }
+        body.light-mode .value,
+        body.light-mode #multiplierDisplay {
+            color: #ff8c42;
+        }
+        body.light-mode .wallet-card,
+        body.light-mode .bet-panel {
+            background: #e0ddf5cc;
+        }
+
+        /* ---------- SIDEBAR (MENU) ---------- */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -320px;
+            width: 300px;
+            height: 100%;
+            background: rgba(10, 10, 26, 0.96);
+            backdrop-filter: blur(16px);
+            z-index: 200;
+            transition: left 0.3s ease;
+            padding: 24px 16px;
+            border-right: 1px solid #ffb34760;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.5);
+            overflow-y: auto;
+        }
+        .sidebar.open { left: 0; }
+        .sidebar h3 { color: #ffd966; margin-top: 0; border-bottom: 1px solid #ffb347; padding-bottom: 8px; margin-bottom: 16px; }
+        .sidebar-section { margin: 20px 0; }
+        .sidebar-btn {
+            width: 100%;
+            background: #1e1a3a;
+            border: none;
+            padding: 10px;
+            margin: 6px 0;
+            border-radius: 40px;
+            color: #ffdfa0;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.08s linear;
+            font-size: 1rem;
+        }
+        .sidebar-btn:active { transform: scale(0.97); background: #3a2e70; }
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 12px 0;
+        }
+        .toggle-switch {
+            width: 44px;
+            height: 22px;
+            background: #333;
+            border-radius: 30px;
+            cursor: pointer;
+            position: relative;
+        }
+        .toggle-switch.active { background: #ffb347; }
+        .toggle-switch:after {
+            content: "";
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 3px;
+            transition: 0.1s;
+        }
+        .toggle-switch.active:after { left: 23px; }
+
+        /* Overlay */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 150;
+            display: none;
+        }
+        .sidebar-overlay.active { display: block; }
+
+        /* ---------- TOP MENU BAR ---------- */
+        .menu-bar {
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(16px);
+            padding: 8px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 200, 80, 0.4);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .logo {
+            font-weight: 800;
+            background: linear-gradient(135deg, #FFD966, #FF8C42);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-size: 1.3rem;
+        }
+        .menu-hyphen {
+            font-size: 2rem;
+            cursor: pointer;
+            padding: 0 16px;
+            color: #ffd966;
+            font-weight: bold;
+            letter-spacing: 4px;
+            z-index: 101;
+            position: relative;
+        }
+
+        /* ---------- MAIN GAME CONTAINER ---------- */
+        .game-container {
+            max-width: 820px;
+            margin: 20px auto;
+            background: rgba(5, 8, 22, 0.7);
+            backdrop-filter: blur(12px);
+            border-radius: 48px;
+            padding: 20px 24px 30px;
+            box-shadow: 0 25px 40px black;
+            border: 1px solid #f0a34b60;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Multiplier area */
+        .multiplier-wrapper {
+            text-align: center;
+            margin: 10px 0 20px 0;
+            padding: 20px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 50px;
+        }
+        #multiplierDisplay {
+            font-size: 4rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #FFE6B0, #FFB347);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-family: 'Monaco', 'Courier New', monospace;
+            letter-spacing: 4px;
+            text-shadow: 0 0 30px rgba(255, 160, 0, 0.4);
+            transition: all 0.03s linear;
+        }
+        .rocket-icon {
+            font-size: 1.8rem;
+            display: inline-block;
+            margin-right: 8px;
+            filter: drop-shadow(0 0 6px orange);
+        }
+        @keyframes flyPulse {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-3px); }
+        }
+        .flying { animation: flyPulse 0.2s ease infinite; }
+
+        /* Info panel (wallet, refer, potential) */
+        .info-panel {
+            display: flex;
+            justify-content: space-between;
+            background: #03000f99;
+            border-radius: 60px;
+            padding: 12px 20px;
+            margin: 16px 0;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .wallet-card { flex: 1; text-align: center; }
+        .label { font-size: 0.7rem; color: #aa99ff; letter-spacing: 1px; }
+        .value { font-size: 1.6rem; font-weight: bold; color: #FFE5A3; font-family: monospace; }
+
+        /* Bet panel */
+        .bet-panel {
+            background: #0b0722;
+            border-radius: 60px;
+            padding: 12px 18px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .bet-input {
+            background: #01000c;
+            padding: 6px 18px;
+            border-radius: 50px;
+        }
+        .bet-input input {
+            background: transparent;
+            border: none;
+            font-size: 1.3rem;
+            width: 100px;
+            color: gold;
+            font-weight: bold;
+            outline: none;
+            font-family: monospace;
+        }
+        .chip {
+            background: #2a2350;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 40px;
+            color: white;
+            cursor: pointer;
+            margin: 0 4px;
+            font-weight: bold;
+            transition: 0.05s linear;
+        }
+        .chip:active { transform: scale(0.95); background: #4a3d80; }
+
+        /* Action Buttons */
+        .action-buttons { display: flex; gap: 16px; margin: 18px 0; }
+        .btn {
+            flex: 1;
+            padding: 14px;
+            font-weight: bold;
+            border: none;
+            border-radius: 60px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: 0.05s linear;
+            font-family: monospace;
+            letter-spacing: 1px;
+        }
+        .btn-bet { background: linear-gradient(95deg, #2b7a3e, #1e5a2e); color: white; box-shadow: 0 5px 0 #0a3a1a; }
+        .btn-cashout { background: linear-gradient(95deg, #e07c1f, #c06810); color: #1e1a0a; box-shadow: 0 5px 0 #8a4f0e; font-weight: 800; }
+        .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #00000066; }
+        .btn:disabled { opacity: 0.45; transform: none; cursor: not-allowed; }
+
+        /* History & Leaderboards */
+        .history-area { margin-top: 20px; background: #02000c80; border-radius: 40px; padding: 12px; }
+        .history-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+        .leaderboard-entry { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #ffb34740; font-size: 0.85rem; }
+        .highlight-50 { color: #ffaa33; font-weight: bold; text-shadow: 0 0 4px orange; }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #000000cc;
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-card {
+            background: #15122b;
+            border-radius: 48px;
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            border: 1px solid gold;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .manual-step { background: #0f0c21; margin: 12px 0; padding: 12px; border-radius: 28px; text-align: left; }
+        .close-modal { background: #7a5a2a; margin-top: 16px; padding: 8px 20px; border: none; border-radius: 40px; color: white; cursor: pointer; }
+        
+        /* Responsive */
+        @media (max-width: 600px) {
+            .game-container { padding: 16px; }
+            #multiplierDisplay { font-size: 2.8rem; }
+            .value { font-size: 1.2rem; }
+            .btn { font-size: 0.9rem; padding: 10px; }
+        }
     </style>
 </head>
 <body>
-    <div id="root"></div>
 
-    <script type="text/babel">
-        // ------------- UTILITIES -------------
-        const rand = (min, max) => +(Math.random() * (max - min) + min).toFixed(2);
-        const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-        const fmtTime = (d) => d.toTimeString().slice(0, 5);
-        const todayStr = () => new Date().toDateString();
+<!-- Overlay for sidebar -->
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
 
-        // ------------- LEAGUES DATA (condensed for brevity, but full) -------------
-        const LEAGUES = {
-            football: [
-                { name: "Premier League 🏴󠁧󠁢󠁥󠁮󠁧󠁿", teams: ["Man City","Arsenal","Chelsea","Liverpool","Man Utd","Tottenham","Newcastle","Brighton","Aston Villa","West Ham","Brentford","Fulham","Crystal Palace","Wolves","Everton","Nottm Forest"] },
-                { name: "La Liga 🇪🇸", teams: ["Real Madrid","Barcelona","Atletico Madrid","Sevilla","Real Sociedad","Villarreal","Athletic Bilbao","Real Betis","Valencia","Osasuna","Celta Vigo","Getafe","Las Palmas","Girona","Alaves","Rayo Vallecano"] },
-                { name: "Serie A 🇮🇹", teams: ["Inter Milan","AC Milan","Juventus","Napoli","AS Roma","Lazio","Fiorentina","Atalanta","Bologna","Torino","Udinese","Sassuolo","Empoli","Monza","Lecce","Frosinone"] },
-                { name: "Bundesliga 🇩🇪", teams: ["Bayern Munich","Dortmund","RB Leipzig","Leverkusen","Union Berlin","Freiburg","Eintracht Frankfurt","Wolfsburg","Hoffenheim","Mainz","Augsburg","Stuttgart","Köln","Bochum","Heidenheim","Werder Bremen"] },
-                { name: "Ligue 1 🇫🇷", teams: ["PSG","Monaco","Marseille","Lens","Lille","Rennes","Nice","Lyon","Montpellier","Strasbourg","Reims","Toulouse","Nantes","Clermont","Lorient","Brest"] },
-                { name: "Champions League 🏆", teams: ["Real Madrid","Man City","Bayern Munich","PSG","Inter Milan","Arsenal","Atletico Madrid","Dortmund","Barcelona","Benfica","Porto","Ajax","Celtic","Napoli","AC Milan","Shakhtar"] },
-                { name: "Europa League 🌍", teams: ["Liverpool","Roma","Bayer Leverkusen","Atalanta","Feyenoord","Sporting CP","Slavia Prague","Union SG","Rennes","Sheriff","Brighton","Ajax","Villarreal","Bodo/Glimt","Slavia Prague","Qarabag"] },
-                { name: "KPL Kenya 🇰🇪", teams: ["Gor Mahia","AFC Leopards","Tusker FC","Kakamega Homeboyz","KCB FC","Bandari","Mathare Utd","Sofapaka","Wazito","Posta Rangers","Ulinzi Stars","Western Stima","Nairobi City Stars","Muranga SEAL","Bidco Utd","Talanta FC"] },
-                { name: "AFCON 🌍", teams: ["Senegal","Nigeria","Egypt","Ivory Coast","Morocco","Ghana","Cameroon","Mali","Algeria","South Africa","DR Congo","Guinea","Tunisia","Zambia","Ethiopia","Comoros"] },
-                { name: "World Cup Quals 🌐", teams: ["Brazil","Argentina","France","England","Germany","Spain","Portugal","Netherlands","Belgium","Uruguay","Colombia","Ecuador","Chile","USA","Mexico","Japan"] },
-            ],
-            basketball: [
-                { name: "NBA 🇺🇸", teams: ["Lakers","Celtics","Warriors","Heat","Nuggets","Suns","Bucks","76ers","Clippers","Nets","Knicks","Bulls","Spurs","Mavericks","Hawks","Grizzlies","Cavaliers","Raptors","Pelicans","Thunder"] },
-                { name: "EuroLeague 🇪🇺", teams: ["Real Madrid","CSKA Moscow","Fenerbahce","Panathinaikos","Anadolu Efes","Bayern Munich","Maccabi Tel Aviv","Olympiacos","Barcelona","Zalgiris","Armani Milan","Valencia","Red Star","Partizan","AS Monaco","Baskonia"] },
-            ],
-            tennis: [
-                { name: "ATP Tour 🎾", teams: ["Djokovic N.","Alcaraz C.","Medvedev D.","Sinner J.","Zverev A.","Tsitsipas S.","Rublev A.","Fritz T.","Hurkacz H.","Norrie C.","Murray A.","Nadal R.","Berrettini M.","De Minaur A.","Dimitrov G.","Tiafoe F."] },
-                { name: "WTA Tour 🎾", teams: ["Swiatek I.","Sabalenka A.","Gauff C.","Rybakina E.","Pegula J.","Jabeur O.","Kvitova P.","Halep S.","Bencic B.","Keys M.","Sakkari M.","Ostapenko J.","Pliskova K.","Kontaveit A.","Muguruza G.","Andreescu B."] },
-            ],
-            rugby: [
-                { name: "Six Nations 🏉", teams: ["England","Ireland","France","Scotland","Wales","Italy"] },
-                { name: "Super Rugby 🏉", teams: ["Chiefs","Blues","Crusaders","Hurricanes","Highlanders","Sharks","Lions","Bulls","Stormers","Rebels","Waratahs","Brumbies","Force","Reds","Jaguares","Sunwolves"] },
-            ],
-            cricket: [
-                { name: "ICC T20 🏏", teams: ["India","Australia","England","Pakistan","New Zealand","South Africa","West Indies","Sri Lanka","Bangladesh","Afghanistan","Zimbabwe","Ireland","Scotland","Netherlands","UAE","Namibia"] },
-                { name: "IPL 🇮🇳", teams: ["Mumbai Indians","Chennai Super Kings","Royal Challengers","Delhi Capitals","Kolkata Knight Riders","Rajasthan Royals","Punjab Kings","Sunrisers Hyderabad","Lucknow Giants","Gujarat Titans"] },
-            ],
-            boxing: [
-                { name: "World Boxing 🥊", teams: ["Canelo Alvarez","Tyson Fury","Anthony Joshua","Oleksandr Usyk","Errol Spence","Terence Crawford","Gervonta Davis","Ryan Garcia","Devin Haney","Jose Ramirez","Lomachenko V.","Stevenson S.","Benavidez D.","Plant C.","Eubank C.","Garcia R."] },
-            ],
+<!-- Top Navigation Bar -->
+<div class="menu-bar">
+    <div class="menu-hyphen" id="menuHyphen">☰</div>
+    <div class="logo">✈️ AERO CRASH · TURBO</div>
+    <div style="width:40px;"></div>
+</div>
+
+<!-- Sidebar Menu -->
+<div class="sidebar" id="sidebar">
+    <h3>⚙️ SETTINGS & MENU</h3>
+    <div class="sidebar-section">
+        <div class="toggle-row"><span>🌙 Dark / ☀️ Light</span><div id="darkLightToggle" class="toggle-switch"></div></div>
+        <div class="toggle-row"><span>🔊 Sound Effects</span><div id="soundToggleSide" class="toggle-switch active"></div></div>
+        <div class="toggle-row"><span>🎵 Background Music</span><div id="musicToggleSide" class="toggle-switch"></div></div>
+        <div class="toggle-row"><span>✨ Animations</span><div id="animToggleSide" class="toggle-switch active"></div></div>
+    </div>
+    <div class="sidebar-section">
+        <button class="sidebar-btn" id="profileBtn">👤 MY PROFILE</button>
+        <button class="sidebar-btn" id="depositBtnSide">💰 DEPOSIT</button>
+        <button class="sidebar-btn" id="withdrawBtnSide">💸 WITHDRAW</button>
+        <button class="sidebar-btn" id="manualBtnSide">📖 MANUAL</button>
+        <button class="sidebar-btn" id="referBtnSide">🏆 REFER & EARN</button>
+    </div>
+    <div class="sidebar-section">
+        <h3>🏅 WEEKLY LEADERBOARD</h3>
+        <div id="weeklyLeaders"></div>
+        <h3>📅 MONTHLY BEST</h3>
+        <div id="monthlyLeaders"></div>
+        <h3>⚡ DAILY HIGH (50x+ SPIKES)</h3>
+        <div id="dailyLeaders"></div>
+        <p style="font-size:10px; color:#aaa;">*Static leaderboards · Turbo speed</p>
+    </div>
+</div>
+
+<!-- Main Game Area -->
+<div class="game-container">
+    <div class="multiplier-wrapper">
+        <span class="rocket-icon" id="rocketIcon">✈️</span>
+        <div id="multiplierDisplay">1.00x</div>
+        <div id="statusMsg" style="font-size:0.85rem; margin-top: 12px; background:#00000080; display:inline-block; padding:6px 20px; border-radius:60px;">⚡ READY · PLACE BET</div>
+    </div>
+
+    <div class="info-panel">
+        <div class="wallet-card"><div class="label">💰 WALLET</div><div class="value" id="walletBalance">1000.00</div></div>
+        <div class="wallet-card"><div class="label">🎁 REFER BONUS</div><div class="value" id="referBalance">0.00</div></div>
+        <div class="wallet-card"><div class="label">⚡ POTENTIAL WIN</div><div class="value" id="potentialWin">0.00</div></div>
+    </div>
+
+    <div class="bet-panel">
+        <div class="bet-input"><label>💎 BET $</label><input type="number" id="betAmount" value="10" step="5" min="1"></div>
+        <div>
+            <button class="chip" data-chip="10">+10</button>
+            <button class="chip" data-chip="25">+25</button>
+            <button class="chip" data-chip="50">+50</button>
+            <button class="chip" data-chip="100">+100</button>
+        </div>
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn btn-bet" id="placeBetBtn">✈️ PLACE BET</button>
+        <button class="btn btn-cashout" id="cashoutBtn" disabled>💎 CASH OUT</button>
+    </div>
+
+    <div class="history-area">
+        <div style="font-size:0.7rem; letter-spacing:2px;">📜 CRASH HISTORY</div>
+        <div class="history-list" id="historyList">—</div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ========== DOM ELEMENTS ==========
+        const elements = {
+            multiplierDisplay: document.getElementById('multiplierDisplay'),
+            statusSpan: document.getElementById('statusMsg'),
+            walletSpan: document.getElementById('walletBalance'),
+            referBonusSpan: document.getElementById('referBalance'),
+            potentialSpan: document.getElementById('potentialWin'),
+            betInput: document.getElementById('betAmount'),
+            placeBtn: document.getElementById('placeBetBtn'),
+            cashoutBtn: document.getElementById('cashoutBtn'),
+            historyDiv: document.getElementById('historyList'),
+            rocketIcon: document.getElementById('rocketIcon'),
+            sidebar: document.getElementById('sidebar'),
+            overlay: document.getElementById('sidebarOverlay'),
+            menuHyphen: document.getElementById('menuHyphen'),
+            weeklyLeaders: document.getElementById('weeklyLeaders'),
+            monthlyLeaders: document.getElementById('monthlyLeaders'),
+            dailyLeaders: document.getElementById('dailyLeaders')
         };
 
-        const generateDailyMatches = () => {
-            const now = new Date();
-            const matches = [];
-            let id = 1;
-            Object.entries(LEAGUES).forEach(([sport, leagues]) => {
-                leagues.forEach((league) => {
-                    const teams = [...league.teams];
-                    for (let i = teams.length - 1; i > 0; i--) {
-                        const j = randInt(0, i);
-                        [teams[i], teams[j]] = [teams[j], teams[i]];
-                    }
-                    const count = Math.min(Math.floor(teams.length / 2), sport === "football" ? 6 : 3);
-                    for (let i = 0; i < count; i++) {
-                        const home = teams[i * 2];
-                        const away = teams[i * 2 + 1];
-                        if (!home || !away) continue;
-                        const kickoffH = randInt(9, 22);
-                        const kickoffM = [0, 15, 30, 45][randInt(0, 3)];
-                        const kickoff = new Date(now);
-                        kickoff.setHours(kickoffH, kickoffM, 0, 0);
-                        const minutesSince = (now - kickoff) / 60000;
-                        const live = minutesSince > 0 && minutesSince < 95;
-                        const finished = minutesSince >= 95;
-                        const homeOdd = rand(1.4, 4.5);
-                        const awayOdd = rand(1.4, 4.5);
-                        const drawOdd = sport === "football" || sport === "rugby" ? rand(2.8, 5.5) : null;
-                        matches.push({
-                            id: id++, sport, league: league.name, home, away, live, finished,
-                            liveMin: live ? Math.min(Math.floor(minutesSince), 90) : null,
-                            score: live || finished ? `${randInt(0, 4)}-${randInt(0, 4)}` : null,
-                            time: finished ? "FT" : live ? `LIVE ${Math.min(Math.floor(minutesSince), 90)}'` : fmtTime(kickoff),
-                            odds: { home: homeOdd.toFixed(2), draw: drawOdd ? drawOdd.toFixed(2) : null, away: awayOdd.toFixed(2) },
-                        });
-                    }
-                });
-            });
-            return matches;
-        };
+        // ========== GAME STATE ==========
+        let balance = 1000.0;
+        let referBonus = 0.0;
+        let currentBet = 0;
+        let isGameActive = false;
+        let hasCashed = false;
+        let currentMultiplier = 1.00;
+        let crashPoint = 1.00;
+        let crashHistory = [];
+        let roundInterval = null;
+        let startTime = 0;
+        let crashDelayMs = 0;
 
-        const CRASH_GAMES = [
-            { id: "aviator", name: "Aviator", icon: "✈️", color: "#c62828", desc: "Fly & cash out before crash!", provider: "Spribe", rtp: "97%", players: 1240 },
-            { id: "jetx", name: "JetX", icon: "🚀", color: "#1565c0", desc: "Rocket launch multiplier", provider: "SmartSoft", rtp: "96.5%", players: 876 },
-            { id: "crash", name: "Crash X", icon: "💥", color: "#6a1b9a", desc: "Classic crash betting", provider: "Betika", rtp: "96%", players: 654 },
-            { id: "spaceman", name: "Spaceman", icon: "👨‍🚀", color: "#00695c", desc: "Space multiplier game", provider: "Pragmatic", rtp: "96.5%", players: 432 },
-            { id: "plinko", name: "Plinko", icon: "🎯", color: "#e65100", desc: "Drop the ball & win", provider: "BGaming", rtp: "97%", players: 321 },
+        // ========== SETTINGS ==========
+        let soundEnabled = true;
+        let musicEnabled = false;
+        let animationsEnabled = true;
+        let darkMode = true;
+        let musicInterval = null;
+
+        // ========== STATIC LEADERBOARDS ==========
+        const weeklyData = [
+            { name: "🚀 ASTRO_CRUSHER", mult: "87.3x" },
+            { name: "💎 NEBULA_WHALE", mult: "64.8x" },
+            { name: "⚡ VOLT_RISK", mult: "52.1x" },
+            { name: "🔥 LUNA_WOLF", mult: "48.5x" },
+            { name: "⭐ DEEP_DRILL", mult: "41.2x" }
         ];
-        const LIVE_CASINO = [
-            { id: "baccarat", name: "Live Baccarat", icon: "🃏", color: "#b71c1c", desc: "Classic Baccarat Live", provider: "Evolution", rtp: "98.9%", players: 2100 },
-            { id: "roulette", name: "Live Roulette", icon: "🎡", color: "#1a237e", desc: "European Roulette Live", provider: "Evolution", rtp: "97.3%", players: 1850 },
-            { id: "blackjack", name: "Live Blackjack", icon: "♠️", color: "#212121", desc: "Infinite Blackjack", provider: "Evolution", rtp: "99.5%", players: 1600 },
-            { id: "poker", name: "Casino Hold'em", icon: "🤠", color: "#4a148c", desc: "Texas Hold'em Live", provider: "Evolution", rtp: "97.8%", players: 980 },
-            { id: "dreamcatcher", name: "Dream Catcher", icon: "🎰", color: "#004d40", desc: "Money Wheel Live", provider: "Evolution", rtp: "96.6%", players: 760 },
-            { id: "sicbo", name: "Sic Bo Live", icon: "🎲", color: "#bf360c", desc: "Asian Dice Game", provider: "Pragmatic", rtp: "97.2%", players: 540 },
-            { id: "dragonTiger", name: "Dragon Tiger", icon: "🐉", color: "#880e4f", desc: "Dragon vs Tiger", provider: "Pragmatic", rtp: "96.3%", players: 870 },
-            { id: "monopoly", name: "Monopoly Live", icon: "🎩", color: "#e65100", desc: "Board Game Show", provider: "Evolution", rtp: "96.2%", players: 1200 },
-            { id: "crazytime", name: "Crazy Time", icon: "🎪", color: "#6a1b9a", desc: "Ultimate Bonus Show", provider: "Evolution", rtp: "96.08%", players: 3200 },
-            { id: "lightning", name: "Lightning Roulette", icon: "⚡", color: "#f9a825", desc: "Lucky Number Strikes", provider: "Evolution", rtp: "97.3%", players: 2400 },
+        const monthlyData = [
+            { name: "🏆 CRYPTO_KING", mult: "215.7x" },
+            { name: "🌟 RISK_MASTER", mult: "189.3x" },
+            { name: "💀 NEBULA_HUNTER", mult: "156.2x" },
+            { name: "⚡ CASH_ORBIT", mult: "134.9x" },
+            { name: "🔥 SKY_ROCKET", mult: "112.5x" }
         ];
-        const VIRTUAL_SPORTS = [
-            { id: "vfootball", name: "Virtual Football", icon: "⚽", color: "#2e7d32", desc: "Matches every 3 mins", provider: "Kiron", rtp: "95%" },
-            { id: "vhorses", name: "Virtual Horses", icon: "🐎", color: "#4e342e", desc: "Races every 2 mins", provider: "Kiron", rtp: "95%" },
-            { id: "vgreyhounds", name: "Virtual Greyhounds", icon: "🐕", color: "#1565c0", desc: "Races every 2 mins", provider: "Betgames", rtp: "95%" },
-            { id: "vbasketball", name: "Virtual Basketball", icon: "🏀", color: "#e65100", desc: "Games every 5 mins", provider: "Kiron", rtp: "95%" },
-        ];
-        const SLOTS = [
-            { id: "gates", name: "Gates of Olympus", icon: "⚡", color: "#1a237e", provider: "Pragmatic", rtp: "96.5%", maxWin: "5000x", hot: true },
-            { id: "bigbass", name: "Big Bass Bonanza", icon: "🎣", color: "#1b5e20", provider: "Pragmatic", rtp: "96.71%", maxWin: "2100x", hot: false },
-            { id: "sweet", name: "Sweet Bonanza", icon: "🍬", color: "#880e4f", provider: "Pragmatic", rtp: "96.51%", maxWin: "21100x", hot: true },
-            { id: "wolf", name: "Wolf Gold", icon: "🐺", color: "#4e342e", provider: "Pragmatic", rtp: "96%", maxWin: "2500x", hot: false },
-            { id: "starlight", name: "Starlight Princess", icon: "⭐", color: "#4a148c", provider: "Pragmatic", rtp: "96.5%", maxWin: "5000x", hot: true },
-            { id: "fishin", name: "Fishin' Frenzy", icon: "🐟", color: "#006064", provider: "Blueprint", rtp: "96.12%", maxWin: "1000x", hot: false },
+        const dailyData = [
+            { name: "⚡ TODAY_SPIKE", mult: "73.4x", highlight: true },
+            { name: "💎 FAST_CASH", mult: "58.2x", highlight: false },
+            { name: "🚀 QUIT_WHILE_AHEAD", mult: "51.9x", highlight: true },
+            { name: "⭐ LUCKY_DRILL", mult: "44.7x", highlight: false },
+            { name: "🔥 EARLY_BIRD", mult: "38.3x", highlight: false }
         ];
 
-        const PROMOTIONS = [
-            { id: 1, title: "KARIBU BONUS", desc: "100% Welcome Bonus up to KES 5,000", color: "#1a7a3c", badge: "NEW" },
-            { id: 2, title: "MEGA JACKPOT", desc: "Win KES 50,000,000 this weekend!", color: "#b8860b", badge: "HOT" },
-            { id: 3, title: "AVIATOR CASHBACK", desc: "50% Cashback on Aviator losses today", color: "#8b0000", badge: "OFFER" },
-        ];
-        const SPORTS_LIST = [
-            { id: "football", label: "Football", icon: "⚽" },
-            { id: "basketball", label: "Basketball", icon: "🏀" },
-            { id: "tennis", label: "Tennis", icon: "🎾" },
-            { id: "rugby", label: "Rugby", icon: "🏉" },
-            { id: "cricket", label: "Cricket", icon: "🏏" },
-            { id: "boxing", label: "Boxing", icon: "🥊" },
-        ];
-
-        // ------------- COMPONENTS -------------
-        function Toast({ message, type, onClose }) {
-            React.useEffect(() => {
-                const timer = setTimeout(onClose, 3000);
-                return () => clearTimeout(timer);
-            }, [onClose]);
-            return React.createElement("div", {
-                style: {
-                    position: "fixed", top: 70, left: "50%", transform: "translateX(-50%)",
-                    background: type === "success" ? "#00c853" : type === "error" ? "#c62828" : "#f9a825",
-                    color: "#000", padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700,
-                    zIndex: 1000, animation: "fadeIn 0.2s ease", maxWidth: "90%", textAlign: "center",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
-                }
-            }, message);
+        function renderLeaderboards() {
+            if (elements.weeklyLeaders) {
+                elements.weeklyLeaders.innerHTML = weeklyData.map(w => 
+                    `<div class="leaderboard-entry"><span>🏆 ${w.name}</span><span class="${parseFloat(w.mult)>=50?'highlight-50':''}">${w.mult}</span></div>`
+                ).join('');
+            }
+            if (elements.monthlyLeaders) {
+                elements.monthlyLeaders.innerHTML = monthlyData.map(m => 
+                    `<div class="leaderboard-entry"><span>🌟 ${m.name}</span><span class="${parseFloat(m.mult)>=50?'highlight-50':''}">${m.mult}</span></div>`
+                ).join('');
+            }
+            if (elements.dailyLeaders) {
+                elements.dailyLeaders.innerHTML = dailyData.map(d => 
+                    `<div class="leaderboard-entry"><span>⚡ ${d.name}</span><span class="${d.highlight ? 'highlight-50' : (parseFloat(d.mult)>=50 ? 'highlight-50' : '')}">${d.mult}</span></div>`
+                ).join('');
+            }
         }
 
-        function AviatorGame({ game, onUpdateBalance, currentBalance }) {
-            const [phase, setPhase] = React.useState("waiting");
-            const [multiplier, setMultiplier] = React.useState(1.00);
-            const [cashedOut, setCashedOut] = React.useState(null);
-            const [stake, setStake] = React.useState("100");
-            const [history, setHistory] = React.useState([14.2, 1.3, 3.7, 22.1, 1.01, 8.5, 2.3, 1.7, 45.2, 1.05]);
-            const [autoCash, setAutoCash] = React.useState("");
-            const [error, setError] = React.useState("");
-            const timerRef = React.useRef(null);
-            const startRef = React.useRef(null);
-            const crashAt = React.useRef(1);
-            const autoCashRef = React.useRef("");
-            autoCashRef.current = autoCash;
-
-            const validateStake = () => {
-                const stakeNum = parseFloat(stake);
-                if (isNaN(stakeNum) || stakeNum < 10) { setError("Min KES 10"); return false; }
-                if (stakeNum > currentBalance) { setError("Insufficient balance"); return false; }
-                setError(""); return true;
-            };
-
-            const startRound = React.useCallback(() => {
-                if (!validateStake()) { setPhase("waiting"); return; }
-                onUpdateBalance(-parseFloat(stake));
-                const base = Math.random();
-                crashAt.current = base < 0.5 ? rand(1.01, 2) : base < 0.8 ? rand(2, 10) : rand(10, 100);
-                setCashedOut(null);
-                setMultiplier(1.00);
-                setPhase("flying");
-                startRef.current = Date.now();
-                if (timerRef.current) clearInterval(timerRef.current);
-                timerRef.current = setInterval(() => {
-                    const elapsed = (Date.now() - startRef.current) / 1000;
-                    const m = Math.pow(Math.E, elapsed * 0.12);
-                    const ac = parseFloat(autoCashRef.current);
-                    if (!isNaN(ac) && ac > 1 && m >= ac) {
-                        if (phase === "flying" && !cashedOut) {
-                            const winAmount = parseFloat(stake) * m;
-                            onUpdateBalance(winAmount);
-                            setCashedOut(+m.toFixed(2));
-                        }
-                    }
-                    if (m >= crashAt.current) {
-                        setMultiplier(+crashAt.current.toFixed(2));
-                        setPhase("crashed");
-                        setHistory(h => [+crashAt.current.toFixed(2), ...h.slice(0, 9)]);
-                        clearInterval(timerRef.current);
-                        setTimeout(startRound, 4000);
-                    } else {
-                        setMultiplier(+m.toFixed(2));
-                    }
-                }, 100);
-            }, [stake, currentBalance, phase, cashedOut]);
-
-            const cashOut = () => {
-                if (phase === "flying" && !cashedOut) {
-                    const winAmount = parseFloat(stake) * multiplier;
-                    onUpdateBalance(winAmount);
-                    setCashedOut(multiplier);
-                }
-            };
-
-            React.useEffect(() => {
-                const t = setTimeout(() => { if (validateStake()) startRound(); }, 3000);
-                return () => { clearTimeout(t); if (timerRef.current) clearInterval(timerRef.current); };
-            }, [startRound]);
-
-            const mulColor = phase === "crashed" ? "#ff5252" : multiplier > 10 ? "#ffd700" : multiplier > 3 ? "#00e676" : "#e8f5e9";
-            return React.createElement("div", { style: { padding: 14 } },
-                error && React.createElement("div", { style: { background: "#c62828", padding: 8, borderRadius: 6, marginBottom: 10, fontSize: 12, textAlign: "center" } }, error),
-                React.createElement("div", { style: { display: "flex", gap: 6, overflowX: "auto", marginBottom: 12, paddingBottom: 4 } },
-                    history.map((h, i) => React.createElement("span", { key: i, style: { minWidth: 50, textAlign: "center", padding: "3px 6px", borderRadius: 20, fontSize: 11, fontWeight: 700, whiteSpace: "nowrap", background: h < 2 ? "#c62828" : h < 5 ? "#1565c0" : h < 20 ? "#6a1b9a" : "#b8860b", color: "#fff" } }, h.toFixed(2) + "x"))
-                ),
-                React.createElement("div", { style: { background: "radial-gradient(ellipse at center,#0d2818,#040a06)", borderRadius: 14, height: 210, position: "relative", overflow: "hidden", border: "1px solid #1a2e22", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "center" } },
-                    phase === "waiting" ? React.createElement("div", { style: { textAlign: "center", opacity: 0.5 } },
-                        React.createElement("div", { style: { fontSize: 40 } }, game.icon),
-                        React.createElement("div", { style: { fontSize: 13, marginTop: 8 } }, "Next round starting..."),
-                        React.createElement("div", { style: { fontSize: 11, marginTop: 4, color: "#ffd700" } }, "Stake: KES ", stake)
-                    ) : React.createElement("div", { style: { textAlign: "center" } },
-                        React.createElement("div", { style: { fontSize: 44, filter: phase === "crashed" ? "grayscale(1)" : "none", marginBottom: 4 } }, phase === "crashed" ? "💥" : game.icon),
-                        React.createElement("div", { style: { fontSize: 52, fontWeight: 900, color: mulColor, letterSpacing: 1, lineHeight: 1 } }, multiplier.toFixed(2), "x"),
-                        phase === "crashed" && React.createElement("div", { style: { fontSize: 13, color: "#ff5252", marginTop: 4 } }, "CRASHED! Lost KES ", stake),
-                        cashedOut && phase === "flying" && React.createElement("div", { style: { fontSize: 12, color: "#00e676", marginTop: 4 } }, "Cashed out @ ", cashedOut.toFixed(2), "x ✓ Won KES ", (parseFloat(stake) * cashedOut).toFixed(0))
-                    )
-                ),
-                React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 } },
-                    React.createElement("div", null,
-                        React.createElement("div", { style: { fontSize: 10, color: "#a5d6a7", marginBottom: 4 } }, "STAKE (KES)"),
-                        React.createElement("input", { value: stake, onChange: e => setStake(e.target.value), type: "number", style: { width: "100%", background: "#0f1f15", border: "1px solid #2a4a32", borderRadius: 8, padding: "9px 10px", color: "#e8f5e9", fontSize: 15, fontWeight: 700, outline: "none" } })
-                    ),
-                    React.createElement("div", null,
-                        React.createElement("div", { style: { fontSize: 10, color: "#a5d6a7", marginBottom: 4 } }, "AUTO CASH OUT"),
-                        React.createElement("input", { value: autoCash, onChange: e => setAutoCash(e.target.value), type: "number", placeholder: "e.g. 2.00", style: { width: "100%", background: "#0f1f15", border: "1px solid #2a4a32", borderRadius: 8, padding: "9px 10px", color: "#e8f5e9", fontSize: 15, fontWeight: 700, outline: "none" } })
-                    )
-                ),
-                React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 10 } },
-                    ["50","100","500","1000"].map(v => React.createElement("div", { key: v, onClick: () => setStake(v), style: { flex: 1, background: stake === v ? "#00c853" : "#1a2e22", color: stake === v ? "#000" : "#e8f5e9", borderRadius: 6, padding: "5px 0", textAlign: "center", fontSize: 11, fontWeight: 700, cursor: "pointer" } }, v))
-                ),
-                React.createElement("div", { onClick: cashOut, style: { background: phase === "flying" && !cashedOut ? "linear-gradient(135deg,#ff6f00,#ffa000)" : "#1a2e22", color: phase === "flying" && !cashedOut ? "#000" : "#4a6a52", borderRadius: 10, padding: "14px 0", textAlign: "center", fontWeight: 900, fontSize: 16, cursor: phase === "flying" && !cashedOut ? "pointer" : "default" } },
-                    cashedOut ? `✓ Won KES ${(+stake * cashedOut).toFixed(0)}` : `CASH OUT @ ${multiplier.toFixed(2)}x = KES ${(+stake * multiplier).toFixed(0)}`
-                )
-            );
+        // ========== CORE GAME LOGIC ==========
+        function generateCrashMultiplier() {
+            let r = Math.random();
+            if (r < 0.55) return 1.0 + Math.random() * 1.2;
+            else if (r < 0.78) return 2.2 + Math.random() * 2.8;
+            else if (r < 0.92) return 5 + Math.random() * 12;
+            else if (r < 0.97) return 17 + Math.random() * 33;
+            else return 50 + Math.random() * 100;
         }
 
-        function SlotGame({ game, onUpdateBalance, currentBalance }) {
-            const SYMS = ["🍒","🍋","🍊","⭐","💎","7️⃣","🔔","🎯","🍇","🍀"];
-            const [reels, setReels] = React.useState([["🍒","🍋","🍊"],["⭐","💎","7️⃣"],["🔔","🎯","🍒"]]);
-            const [spinning, setSpinning] = React.useState(false);
-            const [result, setResult] = React.useState(null);
-            const [stake, setStake] = React.useState("50");
-            const [winAmt, setWinAmt] = React.useState(null);
-            const [error, setError] = React.useState("");
-            const ivRefs = React.useRef([]);
-
-            const validateAndSpin = () => {
-                const stakeNum = parseFloat(stake);
-                if (isNaN(stakeNum) || stakeNum < 10) { setError("Min KES 10"); return; }
-                if (stakeNum > currentBalance) { setError("Insufficient balance"); return; }
-                setError("");
-                spin();
-            };
-            const spin = () => {
-                if (spinning) return;
-                onUpdateBalance(-parseFloat(stake));
-                setSpinning(true); setResult(null); setWinAmt(null);
-                ivRefs.current.forEach(clearInterval);
-                ivRefs.current = [0, 1, 2].map(ri => setInterval(() => setReels(prev => prev.map((r, i) => i === ri ? [SYMS[randInt(0,9)],SYMS[randInt(0,9)],SYMS[randInt(0,9)]] : r)), 80));
-                setTimeout(() => { clearInterval(ivRefs.current[0]); }, 800);
-                setTimeout(() => { clearInterval(ivRefs.current[1]); }, 1100);
-                setTimeout(() => { clearInterval(ivRefs.current[2]); }, 1400);
-                setTimeout(() => {
-                    const final = [0,1,2].map(() => [SYMS[randInt(0,9)],SYMS[randInt(0,9)],SYMS[randInt(0,9)]]);
-                    setReels(final);
-                    const mid = final.map(r => r[1]);
-                    const win3 = mid[0] === mid[1] && mid[1] === mid[2];
-                    const win2 = mid[0] === mid[1] || mid[1] === mid[2];
-                    const mega = win3 && ["💎","7️⃣"].includes(mid[0]);
-                    const mult = mega ? 50 : win3 ? randInt(5,20) : win2 ? 2 : 0;
-                    if (mult > 0) {
-                        const win = parseFloat(stake) * mult;
-                        onUpdateBalance(win);
-                        setResult(mega ? "🏆 MEGA WIN!" : win3 ? "🎉 WIN!" : "✨ Small Win");
-                        setWinAmt(win);
-                    } else { setResult("😢 No win this time"); setWinAmt(0); }
-                    setSpinning(false);
-                }, 1500);
-            };
-            return React.createElement("div", { style: { padding: 14 } },
-                error && React.createElement("div", { style: { background: "#c62828", padding: 8, borderRadius: 6, marginBottom: 10, fontSize: 12, textAlign: "center" } }, error),
-                React.createElement("div", { style: { textAlign: "center", marginBottom: 12 } },
-                    React.createElement("div", { style: { fontSize: 22, fontWeight: 900 } }, game.icon, " ", game.name),
-                    React.createElement("div", { style: { fontSize: 11, color: "#a5d6a7" } }, game.provider, " • RTP ", game.rtp, " • Max ", game.maxWin)
-                ),
-                React.createElement("div", { style: { background: "#0a0f0d", borderRadius: 14, padding: 14, border: "2px solid #2a4a32", marginBottom: 14 } },
-                    React.createElement("div", { style: { display: "flex", gap: 8, justifyContent: "center", marginBottom: 8 } },
-                        reels.map((reel, ri) => React.createElement("div", { key: ri, style: { background: "#0f1f15", borderRadius: 10, width: 82, overflow: "hidden", border: "1px solid #2a4a32" } },
-                            reel.map((sym, si) => React.createElement("div", { key: si, style: { height: 62, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, background: si === 1 ? "rgba(0,200,83,0.12)" : "transparent", borderTop: si === 1 ? "1px solid #00c853" : "none", borderBottom: si === 1 ? "1px solid #00c853" : "none" } }, sym))
-                        ))
-                    ),
-                    React.createElement("div", { style: { textAlign: "center", height: 50 } },
-                        result && React.createElement("div", { style: { fontSize: result.includes("MEGA") ? 22 : 18, fontWeight: 900, color: result.includes("MEGA") ? "#ffd700" : winAmt > 0 ? "#00e676" : "#ff5252" } }, result, winAmt > 0 ? ` KES ${winAmt.toFixed(0)}` : "")
-                    )
-                ),
-                React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 10 } },
-                    ["20","50","100","200","500"].map(v => React.createElement("div", { key: v, onClick: () => setStake(v), style: { flex: 1, background: stake === v ? "#00c853" : "#1a2e22", color: stake === v ? "#000" : "#e8f5e9", borderRadius: 6, padding: "5px 0", textAlign: "center", fontSize: 11, fontWeight: 700, cursor: "pointer" } }, v))
-                ),
-                React.createElement("div", { onClick: validateAndSpin, style: { background: spinning ? "#1a2e22" : "linear-gradient(135deg,#00c853,#00e676)", color: spinning ? "#4a6a52" : "#000", borderRadius: 10, padding: "14px 0", textAlign: "center", fontWeight: 900, fontSize: 17, cursor: spinning ? "default" : "pointer", letterSpacing: 1 } },
-                    spinning ? "SPINNING... 🎰" : `SPIN  •  KES ${stake}`
-                )
-            );
+        function generateCrashDelay() {
+            let r = Math.random();
+            if (r < 0.35) return 1200 + Math.random() * 2000;
+            else if (r < 0.65) return 3200 + Math.random() * 4000;
+            else if (r < 0.88) return 7200 + Math.random() * 5000;
+            else return 12200 + Math.random() * 6000;
         }
 
-        // MAIN APP
-        function BetikaApp() {
-            const [activeTab, setActiveTab] = React.useState("home");
-            const [activeSport, setActiveSport] = React.useState("football");
-            const [casinoSec, setCasinoSec] = React.useState("crash");
-            const [activeCrashGame, setActiveCrashGame] = React.useState(null);
-            const [activeSlot, setActiveSlot] = React.useState(null);
-            const [betslip, setBetslip] = React.useState([]);
-            const [selectedOdds, setSelectedOdds] = React.useState({});
-            const [stakeInput, setStakeInput] = React.useState("");
-            const [betPlaced, setBetPlaced] = React.useState(false);
-            const [showBetslip, setShowBetslip] = React.useState(false);
-            const [balance, setBalance] = React.useState(12450);
-            const [searchQuery, setSearchQuery] = React.useState("");
-            const [matches, setMatches] = React.useState([]);
-            const [lastGenDate, setLastGenDate] = React.useState("");
-            const [leagueFilter, setLeagueFilter] = React.useState("All");
-            const [myBetsFilter, setMyBetsFilter] = React.useState("all");
-            const [toast, setToast] = React.useState(null);
-            const [myBets, setMyBets] = React.useState([
-                { id: "b1", date: "Apr 22", teams: "Man City vs Arsenal", pick: "Man City", odds: "1.45", stake: 200, status: "won", payout: 290 },
-                { id: "b2", date: "Apr 22", teams: "Real Madrid vs Barca", pick: "Draw", odds: "3.40", stake: 100, status: "lost", payout: 0 },
-                { id: "b3", date: "Apr 21", teams: "Chelsea vs Liverpool", pick: "Liverpool", odds: "2.50", stake: 150, status: "pending", payout: 375 },
-                { id: "b4", date: "Apr 21", teams: "Lakers vs Celtics", pick: "Celtics", odds: "1.95", stake: 300, status: "won", payout: 585 },
-                { id: "b5", date: "Apr 20", teams: "Swiatek vs Sabalenka", pick: "Swiatek I.", odds: "1.75", stake: 100, status: "lost", payout: 0 },
-            ]);
+        function updateUI() {
+            if (elements.walletSpan) elements.walletSpan.innerText = balance.toFixed(2);
+            if (elements.referBonusSpan) elements.referBonusSpan.innerText = referBonus.toFixed(2);
+            if (isGameActive && currentBet > 0 && !hasCashed) {
+                if (elements.potentialSpan) elements.potentialSpan.innerText = (currentBet * currentMultiplier).toFixed(2);
+            } else {
+                if (elements.potentialSpan) elements.potentialSpan.innerText = "0.00";
+            }
+            if (elements.cashoutBtn) {
+                elements.cashoutBtn.disabled = !(isGameActive && currentBet > 0 && !hasCashed && currentMultiplier > 1.02);
+            }
+        }
 
-            const showToastMsg = (msg, type="success") => setToast({ message: msg, type });
-            const updateBalance = (amount) => {
-                const newBalance = balance + amount;
-                if (newBalance < 0) { showToastMsg("Insufficient balance!", "error"); return false; }
-                setBalance(newBalance);
-                if (amount > 1000) showToastMsg(`🎉 You won KES ${amount.toFixed(0)}!`, "success");
-                return true;
-            };
+        function updateMultiplier() {
+            if (!isGameActive) return;
+            let elapsed = Date.now() - startTime;
+            if (elapsed >= crashDelayMs) {
+                currentMultiplier = crashPoint;
+                if (elements.multiplierDisplay) elements.multiplierDisplay.innerText = currentMultiplier.toFixed(2) + "x";
+                crashEvent();
+                return;
+            }
+            let progress = elapsed / crashDelayMs;
+            let curvePower = 1.35;
+            let mult = 1 + (crashPoint - 1) * Math.pow(progress, curvePower);
+            let turbulence = Math.sin(elapsed / 250) * 0.02 * mult;
+            mult = Math.max(1.01, Math.min(crashPoint, mult + turbulence));
+            currentMultiplier = parseFloat(mult.toFixed(4));
+            if (elements.multiplierDisplay) elements.multiplierDisplay.innerText = currentMultiplier.toFixed(2) + "x";
+            if (currentBet > 0 && !hasCashed) {
+                if (elements.potentialSpan) elements.potentialSpan.innerText = (currentBet * currentMultiplier).toFixed(2);
+            }
+            if (elements.cashoutBtn) {
+                elements.cashoutBtn.disabled = !(isGameActive && currentBet > 0 && !hasCashed && currentMultiplier > 1.02);
+            }
+        }
 
-            React.useEffect(() => {
-                const today = todayStr();
-                if (lastGenDate !== today) { setMatches(generateDailyMatches()); setLastGenDate(today); }
-            }, [lastGenDate]);
-            React.useEffect(() => {
-                const iv = setInterval(() => {
-                    setMatches(prev => prev.map(m => {
-                        if (!m.live) return m;
-                        const nm = Math.min((m.liveMin || 0) + 1, 90);
-                        return { ...m, liveMin: nm, time: `LIVE ${nm}'` };
-                    }));
-                }, 60000);
-                return () => clearInterval(iv);
-            }, []);
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                const audioCtx = new AudioCtx();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.type = 'sine';
+                if (type === 'cashout') { osc.frequency.value = 880; gain.gain.value = 0.15; osc.start(); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.7); osc.stop(audioCtx.currentTime+0.6); }
+                else if (type === 'crash') { osc.frequency.value = 180; gain.gain.value = 0.2; osc.start(); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.9); osc.stop(audioCtx.currentTime+0.8); }
+                else if (type === 'bet') { osc.frequency.value = 660; gain.gain.value = 0.1; osc.start(); osc.stop(audioCtx.currentTime+0.2); }
+                setTimeout(() => audioCtx.close(), 1000);
+            } catch(e) { console.log("Audio error:", e); }
+        }
 
-            const toggleOdd = (matchId, market, odd, home, away, league) => {
-                const key = `${matchId}-${market}`;
-                if (selectedOdds[key]) {
-                    const n = { ...selectedOdds }; delete n[key];
-                    setSelectedOdds(n);
-                    setBetslip(prev => prev.filter(b => b.key !== key));
-                } else {
-                    const label = market === "home" ? home : market === "away" ? away : "Draw";
-                    setSelectedOdds(prev => ({ ...prev, [key]: true }));
-                    setBetslip(prev => [...prev, { key, matchId, market, odd, label, home, away, league }]);
-                    showToastMsg(`Added ${label} to betslip`, "success");
-                }
-            };
-            const removeFromSlip = (key) => {
-                const n = { ...selectedOdds }; delete n[key];
-                setSelectedOdds(n);
-                setBetslip(prev => prev.filter(b => b.key !== key));
-                showToastMsg("Removed from betslip", "info");
-            };
-            const clearBetslip = () => {
-                setBetslip([]);
-                setSelectedOdds({});
-                setShowBetslip(false);
-                showToastMsg("Betslip cleared", "info");
-            };
-            const totalOdds = betslip.reduce((a, b) => a * parseFloat(b.odd), 1);
-            const potentialWin = stakeInput ? (parseFloat(stakeInput) * totalOdds).toFixed(2) : "0.00";
-            const placeBet = () => {
-                if (betslip.length === 0) { showToastMsg("Select at least one bet", "error"); return; }
-                if (!stakeInput || parseFloat(stakeInput) < 10) { showToastMsg("Min stake KES 10", "error"); return; }
-                if (parseFloat(stakeInput) > balance) { showToastMsg("Insufficient balance", "error"); return; }
-                setBetPlaced(true);
-                const nb = { id: `b${Date.now()}`, date: "Today", teams: betslip.map(b => `${b.home} vs ${b.away}`).join(", "), pick: betslip.map(b => b.label).join(" + "), odds: totalOdds.toFixed(2), stake: parseFloat(stakeInput), status: "pending", payout: parseFloat(potentialWin) };
-                setMyBets(prev => [nb, ...prev]);
-                updateBalance(-parseFloat(stakeInput));
-                showToastMsg(`Bet placed! Potential win: KES ${parseFloat(potentialWin).toFixed(0)}`, "success");
-                setTimeout(() => { setBetPlaced(false); setBetslip([]); setSelectedOdds({}); setStakeInput(""); setShowBetslip(false); }, 2500);
-            };
+        function crashEvent() {
+            if (!isGameActive) return;
+            if (roundInterval) clearInterval(roundInterval);
+            roundInterval = null;
+            isGameActive = false;
+            
+            if (currentBet > 0 && !hasCashed) {
+                playSound('crash');
+                if (elements.statusSpan) elements.statusSpan.innerHTML = `💥 CRASHED at ${currentMultiplier.toFixed(2)}x · Lost $${currentBet.toFixed(2)}`;
+                currentBet = 0;
+            } else if (hasCashed) {
+                if (elements.statusSpan) elements.statusSpan.innerHTML = `✅ CASHED OUT at ${currentMultiplier.toFixed(2)}x!`;
+            } else {
+                if (elements.statusSpan) elements.statusSpan.innerHTML = `💀 CRASH at ${currentMultiplier.toFixed(2)}x`;
+            }
+            
+            if (elements.rocketIcon && animationsEnabled) elements.rocketIcon.classList.remove('flying');
+            
+            crashHistory.unshift(currentMultiplier.toFixed(2) + 'x');
+            if (crashHistory.length > 12) crashHistory.pop();
+            if (elements.historyDiv) {
+                elements.historyDiv.innerHTML = crashHistory.map(h => 
+                    `<span style="background:#1e1a3a; padding:4px 14px; border-radius:30px; ${parseFloat(h)>=50?'color:#ffaa33; font-weight:bold;':''}">${h}</span>`
+                ).join('');
+            }
+            
+            currentBet = 0;
+            hasCashed = false;
+            currentMultiplier = 1;
+            if (elements.multiplierDisplay) elements.multiplierDisplay.innerText = "1.00x";
+            updateUI();
+            
+            setTimeout(() => {
+                if (!isGameActive && elements.statusSpan) elements.statusSpan.innerHTML = "✈️ Place bet to start · CRASH ANYTIME!";
+            }, 1500);
+        }
 
-            const filteredMatches = React.useMemo(() => matches.filter(m => m.sport === activeSport && (searchQuery === "" || m.home.toLowerCase().includes(searchQuery.toLowerCase()) || m.away.toLowerCase().includes(searchQuery.toLowerCase())) && (leagueFilter === "All" || m.league === leagueFilter)), [matches, activeSport, searchQuery, leagueFilter]);
-            const leaguesForSport = LEAGUES[activeSport]?.map(l => l.name) || [];
-            const pendingCount = myBets.filter(b => b.status === "pending").length;
-            const filteredMyBets = myBets.filter(b => myBetsFilter === "all" || b.status === myBetsFilter);
+        function startRound() {
+            if (isGameActive) return;
+            if (currentBet <= 0) {
+                if (elements.statusSpan) elements.statusSpan.innerHTML = "⚠️ Place a bet first!";
+                return;
+            }
+            crashPoint = generateCrashMultiplier();
+            crashDelayMs = generateCrashDelay();
+            currentMultiplier = 1.00;
+            if (elements.multiplierDisplay) elements.multiplierDisplay.innerText = "1.00x";
+            isGameActive = true;
+            hasCashed = false;
+            startTime = Date.now();
+            if (elements.statusSpan) elements.statusSpan.innerHTML = `✈️ FLYING · Crash up to ${crashPoint.toFixed(2)}x · CASHOUT ANYTIME!`;
+            if (animationsEnabled && elements.rocketIcon) elements.rocketIcon.classList.add('flying');
+            updateUI();
+            if (roundInterval) clearInterval(roundInterval);
+            roundInterval = setInterval(() => updateMultiplier(), 30);
+        }
 
-            return React.createElement("div", { style: { fontFamily: "'Barlow Condensed','Oswald',sans-serif", background: "#0a0f0d", minHeight: "100vh", color: "#e8f5e9", maxWidth: 420, margin: "0 auto", position: "relative" } },
-                toast && React.createElement(Toast, { message: toast.message, type: toast.type, onClose: () => setToast(null) }),
-                // Header
-                React.createElement("div", { style: { background: "linear-gradient(180deg,#0d2818,#0a1f14)", padding: "0 12px", borderBottom: "2px solid #00c853", position: "sticky", top: 0, zIndex: 100 } },
-                    React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", height: 50 } },
-                        React.createElement("div", { style: { background: "linear-gradient(135deg,#00c853,#00e676)", borderRadius: 6, padding: "4px 10px", fontWeight: 900, fontSize: 20, letterSpacing: 1, color: "#000" } }, "BETIKA"),
-                        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
-                            React.createElement("div", { style: { background: "#1a2e22", borderRadius: 20, padding: "4px 12px", fontSize: 12, color: "#00e676", fontWeight: 700 } }, "KES ", balance.toLocaleString("en-KE", { minimumFractionDigits: 2 })),
-                            React.createElement("div", { onClick: () => showToastMsg("Deposit feature - demo", "info"), style: { background: "#00c853", borderRadius: 20, padding: "4px 12px", fontSize: 12, color: "#000", fontWeight: 700, cursor: "pointer" } }, "DEPOSIT")
-                        )
-                    ),
-                    activeTab === "home" && React.createElement("div", { style: { paddingBottom: 8 } },
-                        React.createElement("div", { style: { background: "#1a2e22", borderRadius: 8, display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", border: "1px solid #2a4a32" } },
-                            React.createElement("span", { style: { fontSize: 13, opacity: 0.45 } }, "🔍"),
-                            React.createElement("input", { placeholder: "Search teams, leagues...", value: searchQuery, onChange: e => setSearchQuery(e.target.value), style: { background: "none", border: "none", outline: "none", color: "#e8f5e9", fontSize: 13, width: "100%" } })
-                        )
-                    )
-                ),
-                // Main content based on tab
-                activeTab === "home" && React.createElement("div", null,
-                    React.createElement("div", { style: { overflowX: "auto", display: "flex", gap: 10, padding: "10px 12px" } },
-                        PROMOTIONS.map(p => React.createElement("div", { key: p.id, style: { minWidth: 265, background: `linear-gradient(135deg,${p.color}cc,${p.color}44)`, border: `1px solid ${p.color}`, borderRadius: 10, padding: "12px 14px", cursor: "pointer" } },
-                            React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 3 } },
-                                React.createElement("span", { style: { background: "#00c853", color: "#000", fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 4 } }, p.badge),
-                                React.createElement("span", { style: { fontSize: 14, fontWeight: 800 } }, p.title)
-                            ),
-                            React.createElement("div", { style: { fontSize: 11, opacity: 0.85 } }, p.desc)
-                        ))
-                    ),
-                    React.createElement("div", { style: { margin: "0 12px 8px", background: "linear-gradient(90deg,#8b0000,#c62828)", borderRadius: 8, padding: "7px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" } },
-                        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 7 } },
-                            React.createElement("span", { className: "plive", style: { display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: "#ff5252" } }),
-                            React.createElement("span", { style: { fontSize: 12, fontWeight: 700 } }, "LIVE NOW")
-                        ),
-                        React.createElement("span", { style: { fontSize: 11, color: "#ffcdd2" } }, matches.filter(m => m.live).length, " in play →")
-                    ),
-                    React.createElement("div", { style: { overflowX: "auto", display: "flex", padding: "0 12px 8px", gap: 6 } },
-                        SPORTS_LIST.map(s => React.createElement("div", { key: s.id, className: "stab", onClick: () => { setActiveSport(s.id); setLeagueFilter("All"); }, style: { minWidth: "fit-content", padding: "6px 12px", borderRadius: 20, background: activeSport === s.id ? "#00c853" : "#1a2e22", color: activeSport === s.id ? "#000" : "#a5d6a7", fontSize: 12, fontWeight: activeSport === s.id ? 700 : 500, border: activeSport === s.id ? "none" : "1px solid #2a4a32", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" } },
-                            React.createElement("span", { style: { fontSize: 14 } }, s.icon), s.label
-                        ))
-                    ),
-                    React.createElement("div", { style: { overflowX: "auto", display: "flex", padding: "0 12px 8px", gap: 5 } },
-                        ["All", ...leaguesForSport].map(l => React.createElement("div", { key: l, onClick: () => setLeagueFilter(l), style: { minWidth: "fit-content", padding: "3px 9px", borderRadius: 20, background: leagueFilter === l ? "#1a7a3c" : "#0f1f15", border: leagueFilter === l ? "1px solid #00c853" : "1px solid #1a2e22", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap", cursor: "pointer" } }, l))
-                    ),
-                    React.createElement("div", { style: { padding: "0 12px" } },
-                        filteredMatches.length === 0 && React.createElement("div", { style: { textAlign: "center", padding: "40px 0", opacity: 0.4, fontSize: 14 } }, matches.length === 0 ? "Loading daily matches..." : "No matches found"),
-                        filteredMatches.map(m => React.createElement("div", { key: m.id, className: "mcard fin", style: { background: "#0f1f15", borderRadius: 10, marginBottom: 7, border: "1px solid #1a2e22", overflow: "hidden" } },
-                            React.createElement("div", { style: { padding: "5px 12px", background: m.live ? "rgba(139,0,0,0.3)" : m.finished ? "#0a0f0d" : "#0d1a11", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #1a2e22" } },
-                                React.createElement("span", { style: { fontSize: 10, color: "#a5d6a7" } }, m.league),
-                                React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 5 } },
-                                    m.live && React.createElement("span", { className: "plive", style: { display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: "#ff5252" } }),
-                                    React.createElement("span", { style: { fontSize: 10, fontWeight: 700, color: m.live ? "#ff5252" : m.finished ? "#666" : "#a5d6a7" } }, m.time)
-                                )
-                            ),
-                            React.createElement("div", { style: { padding: "8px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" } },
-                                React.createElement("div", { style: { flex: 1 } },
-                                    React.createElement("div", { style: { fontSize: 14, fontWeight: 700, marginBottom: 3 } }, m.home),
-                                    React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: "#a5d6a7" } }, m.away)
-                                ),
-                                m.score && React.createElement("div", { style: { background: "#1a2e22", borderRadius: 6, padding: "4px 10px", fontWeight: 800, fontSize: 15, border: "1px solid #2a4a32", letterSpacing: 2 } }, m.score)
-                            ),
-                            React.createElement("div", { style: { padding: "0 12px 8px", display: "flex", gap: 5 } },
-                                [{ market: "home", label: "1", value: m.odds.home }, m.odds.draw ? { market: "draw", label: "X", value: m.odds.draw } : null, { market: "away", label: "2", value: m.odds.away }].filter(Boolean).map(o => {
-                                    const key = `${m.id}-${o.market}`; const sel = !!selectedOdds[key];
-                                    return React.createElement("div", { key: o.market, className: "hov", onClick: () => !m.finished && toggleOdd(m.id, o.market, o.value, m.home, m.away, m.league), style: { flex: 1, background: sel ? "#00c853" : "#1a2e22", borderRadius: 7, padding: "7px 3px", textAlign: "center", border: sel ? "1px solid #00e676" : "1px solid #2a4a32", opacity: m.finished ? 0.45 : 1 } },
-                                        React.createElement("div", { style: { fontSize: 9, color: sel ? "#000" : "#a5d6a7", marginBottom: 1 } }, o.label),
-                                        React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: sel ? "#000" : "#e8f5e9" } }, o.value)
-                                    );
-                                }),
-                                React.createElement("div", { className: "hov", style: { width: 32, background: "#1a2e22", borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #2a4a32", fontSize: 13, fontWeight: 700 } }, "+")
-                            )
-                        ))
-                    )
-                ),
-                activeTab === "jackpot" && React.createElement("div", { style: { padding: 14 } },
-                    [{ label: "🏆 MEGA JACKPOT", amount: "KES 50,000,000", sub: "Predict 17 matches • KES 99", grad: "linear-gradient(135deg,#b8860b,#ffd700,#b8860b)", tc: "#000" }, { label: "⚡ MIDWEEK JACKPOT", amount: "KES 5,000,000", sub: "Predict 13 matches • KES 49", grad: "linear-gradient(135deg,#1a2e22,#0f1f15)", tc: "#00e676" }].map((jp, i) => React.createElement("div", { key: i, style: { background: jp.grad, borderRadius: 14, padding: "20px", textAlign: "center", marginBottom: 14, border: i === 1 ? "1px solid #2a4a32" : "none" } },
-                        React.createElement("div", { style: { fontSize: 12, color: jp.tc, fontWeight: 600, marginBottom: 4, opacity: 0.7 } }, jp.label),
-                        React.createElement("div", { style: { fontSize: 30, fontWeight: 900, color: jp.tc, letterSpacing: 1 } }, jp.amount),
-                        React.createElement("div", { style: { fontSize: 11, color: jp.tc, marginTop: 4, opacity: 0.7 } }, jp.sub)
-                    )),
-                    Array.from({ length: 13 }).map((_, i) => React.createElement("div", { key: i, style: { background: "#0f1f15", borderRadius: 8, padding: "10px 12px", marginBottom: 6, border: "1px solid #1a2e22" } },
-                        React.createElement("div", { style: { fontSize: 10, color: "#4a6a52", marginBottom: 4 } }, "Match ", i + 1),
-                        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
-                            React.createElement("span", { style: { fontSize: 13, fontWeight: 700 } }, "Team A vs Team B"),
-                            React.createElement("div", { style: { display: "flex", gap: 4 } }, ["1","X","2"].map(o => React.createElement("div", { key: o, style: { background: "#1a2e22", borderRadius: 6, padding: "4px 10px", fontSize: 12, fontWeight: 700, cursor: "pointer", border: "1px solid #2a4a32" } }, o)))
-                        )
-                    )),
-                    React.createElement("div", { style: { background: "linear-gradient(135deg,#00c853,#00e676)", borderRadius: 10, padding: "13px 0", textAlign: "center", fontSize: 15, fontWeight: 800, color: "#000", cursor: "pointer", marginTop: 8 } }, "PLAY JACKPOT • KES 49")
-                ),
-                activeTab === "casino" && React.createElement("div", null,
-                    (activeCrashGame || activeSlot) ? React.createElement("div", null,
-                        React.createElement("div", { style: { padding: "10px 14px", borderBottom: "1px solid #1a2e22", display: "flex", alignItems: "center", gap: 8 } },
-                            React.createElement("div", { onClick: () => { setActiveCrashGame(null); setActiveSlot(null); }, style: { color: "#00e676", fontSize: 13, fontWeight: 700, cursor: "pointer" } }, "← Back"),
-                            React.createElement("span", { style: { fontSize: 14, fontWeight: 800 } }, activeCrashGame ? activeCrashGame.name : activeSlot?.name)
-                        ),
-                        activeCrashGame && React.createElement(AviatorGame, { game: activeCrashGame, onUpdateBalance: updateBalance, currentBalance: balance }),
-                        activeSlot && React.createElement(SlotGame, { game: activeSlot, onUpdateBalance: updateBalance, currentBalance: balance })
-                    ) : React.createElement("div", null,
-                        React.createElement("div", { style: { display: "flex", borderBottom: "1px solid #1a2e22", background: "#0a0f0d", position: "sticky", top: 0, zIndex: 50 } },
-                            [{ id: "crash", label: "💥 Crash", count: CRASH_GAMES.length }, { id: "live", label: "🃏 Live", count: LIVE_CASINO.length }, { id: "virtual", label: "🎮 Virtual", count: VIRTUAL_SPORTS.length }, { id: "slots", label: "🎰 Slots", count: SLOTS.length }].map(s => React.createElement("div", { key: s.id, onClick: () => setCasinoSec(s.id), style: { flex: 1, padding: "10px 2px", textAlign: "center", cursor: "pointer", fontSize: 11, fontWeight: 700, color: casinoSec === s.id ? "#00e676" : "#4a6a52", borderBottom: casinoSec === s.id ? "2px solid #00c853" : "2px solid transparent", background: casinoSec === s.id ? "#0f1f15" : "none" } },
-                                s.label, React.createElement("span", { style: { display: "block", fontSize: 9, color: "#2a4a32", marginTop: 1 } }, s.count, " games")
-                            ))
-                        ),
-                        casinoSec === "crash" && React.createElement("div", { style: { padding: 14 } },
-                            React.createElement("div", { style: { fontSize: 11, color: "#a5d6a7", marginBottom: 10 } }, "🔥 Cash out before it crashes!"),
-                            CRASH_GAMES.map(g => React.createElement("div", { key: g.id, className: "gcard", onClick: () => setActiveCrashGame(g), style: { background: `linear-gradient(135deg,${g.color}33,#0f1f15)`, border: `1px solid ${g.color}55`, borderRadius: 12, padding: 14, marginBottom: 10, display: "flex", alignItems: "center", gap: 12 } },
-                                React.createElement("div", { style: { width: 54, height: 54, borderRadius: 12, background: `linear-gradient(135deg,${g.color},${g.color}88)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 } }, g.icon),
-                                React.createElement("div", { style: { flex: 1 } },
-                                    React.createElement("div", { style: { fontSize: 17, fontWeight: 800 } }, g.name),
-                                    React.createElement("div", { style: { fontSize: 11, color: "#a5d6a7" } }, g.desc),
-                                    React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 3 } },
-                                        React.createElement("span", { style: { fontSize: 10, color: "#4a6a52" } }, g.provider),
-                                        React.createElement("span", { style: { fontSize: 10, color: "#00e676" } }, "RTP ", g.rtp),
-                                        React.createElement("span", { style: { fontSize: 10, color: "#ff9800" } }, "🔴 ", g.players.toLocaleString())
-                                    )
-                                ),
-                                React.createElement("div", { style: { background: "#00c853", borderRadius: 8, padding: "8px 12px", color: "#000", fontWeight: 700, fontSize: 12, flexShrink: 0 } }, "PLAY")
-                            ))
-                        ),
-                        casinoSec === "live" && React.createElement("div", { style: { padding: 14 } },
-                            React.createElement("div", { style: { fontSize: 11, color: "#a5d6a7", marginBottom: 10 } }, "🎥 Real dealers streaming live 24/7"),
-                            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } },
-                                LIVE_CASINO.map(g => React.createElement("div", { key: g.id, className: "gcard", style: { background: `linear-gradient(160deg,${g.color}44,#0f1f15)`, border: `1px solid ${g.color}55`, borderRadius: 12, padding: 12, cursor: "pointer" } },
-                                    React.createElement("div", { style: { fontSize: 30, textAlign: "center", marginBottom: 6 } }, g.icon),
-                                    React.createElement("div", { style: { fontSize: 13, fontWeight: 800, textAlign: "center" } }, g.name),
-                                    React.createElement("div", { style: { fontSize: 10, color: "#a5d6a7", textAlign: "center", marginTop: 2 } }, g.provider),
-                                    React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginTop: 5 } },
-                                        React.createElement("span", { style: { fontSize: 10, color: "#00e676" } }, g.rtp),
-                                        React.createElement("span", { style: { fontSize: 10, color: "#ff9800" } }, "🔴 ", g.players.toLocaleString())
-                                    ),
-                                    React.createElement("div", { style: { background: "#00c853", borderRadius: 6, padding: "5px 0", textAlign: "center", color: "#000", fontWeight: 700, fontSize: 11, marginTop: 8 } }, "PLAY LIVE")
-                                ))
-                            )
-                        ),
-                        casinoSec === "virtual" && React.createElement("div", { style: { padding: 14 } },
-                            React.createElement("div", { style: { fontSize: 11, color: "#a5d6a7", marginBottom: 10 } }, "🎮 Computer-simulated sports running every few minutes"),
-                            VIRTUAL_SPORTS.map(g => React.createElement("div", { key: g.id, className: "gcard", style: { background: `linear-gradient(135deg,${g.color}33,#0f1f15)`, border: `1px solid ${g.color}55`, borderRadius: 12, padding: 14, marginBottom: 10 } },
-                                React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, marginBottom: 10 } },
-                                    React.createElement("div", { style: { width: 54, height: 54, borderRadius: 12, background: `linear-gradient(135deg,${g.color},${g.color}88)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 } }, g.icon),
-                                    React.createElement("div", { style: { flex: 1 } },
-                                        React.createElement("div", { style: { fontSize: 17, fontWeight: 800 } }, g.name),
-                                        React.createElement("div", { style: { fontSize: 11, color: "#a5d6a7" } }, g.desc),
-                                        React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 3 } },
-                                            React.createElement("span", { style: { fontSize: 10, color: "#4a6a52" } }, g.provider),
-                                            React.createElement("span", { style: { fontSize: 10, color: "#00e676" } }, "RTP ", g.rtp)
-                                        )
-                                    ),
-                                    React.createElement("div", { style: { background: "#00c853", borderRadius: 8, padding: "7px 10px", color: "#000", fontWeight: 700, fontSize: 12, flexShrink: 0, cursor: "pointer" } }, "PLAY")
-                                ),
-                                React.createElement("div", { style: { display: "flex", gap: 5 } },
-                                    (g.id === "vhorses" || g.id === "vgreyhounds") ? ["1st","2nd","3rd","Field"].map(o => React.createElement("div", { key: o, style: { flex: 1, background: "#1a2e22", borderRadius: 6, padding: "6px 2px", textAlign: "center", border: "1px solid #2a4a32", cursor: "pointer" } },
-                                        React.createElement("div", { style: { fontSize: 9, color: "#a5d6a7" } }, o),
-                                        React.createElement("div", { style: { fontSize: 12, fontWeight: 800 } }, rand(2, 8).toFixed(2))
-                                    )) : ["Home", "Draw", "Away"].map(o => React.createElement("div", { key: o, style: { flex: 1, background: "#1a2e22", borderRadius: 6, padding: "6px 2px", textAlign: "center", border: "1px solid #2a4a32", cursor: "pointer" } },
-                                        React.createElement("div", { style: { fontSize: 9, color: "#a5d6a7" } }, o),
-                                        React.createElement("div", { style: { fontSize: 12, fontWeight: 800 } }, rand(1.5, 4).toFixed(2))
-                                    ))
-                                )
-                            ))
-                        ),
-                        casinoSec === "slots" && React.createElement("div", { style: { padding: 14 } },
-                            React.createElement("div", { style: { fontSize: 11, color: "#a5d6a7", marginBottom: 10 } }, "🎰 Spin to win huge multipliers"),
-                            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } },
-                                SLOTS.map(g => React.createElement("div", { key: g.id, className: "gcard", onClick: () => setActiveSlot(g), style: { background: "linear-gradient(160deg,#1a2e22,#0f1f15)", border: "1px solid #2a4a32", borderRadius: 12, padding: 12, position: "relative", overflow: "hidden" } },
-                                    g.hot && React.createElement("span", { style: { position: "absolute", top: 8, right: 8, background: "#c62828", fontSize: 9, fontWeight: 800, padding: "2px 5px", borderRadius: 8, color: "#fff" } }, "🔥HOT"),
-                                    React.createElement("div", { style: { fontSize: 30, textAlign: "center", marginBottom: 6 } }, g.icon),
-                                    React.createElement("div", { style: { fontSize: 12, fontWeight: 800, textAlign: "center" } }, g.name),
-                                    React.createElement("div", { style: { fontSize: 10, color: "#a5d6a7", textAlign: "center", marginTop: 2 } }, g.provider),
-                                    React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginTop: 5 } },
-                                        React.createElement("span", { style: { fontSize: 10, color: "#00e676" } }, "RTP ", g.rtp),
-                                        React.createElement("span", { style: { fontSize: 10, color: "#ffd700" } }, g.maxWin)
-                                    ),
-                                    React.createElement("div", { style: { background: "#00c853", borderRadius: 6, padding: "5px 0", textAlign: "center", color: "#000", fontWeight: 700, fontSize: 11, marginTop: 8 } }, "SPIN NOW")
-                                ))
-                            )
-                        )
-                    )
-                ),
-                activeTab === "mybets" && React.createElement("div", { style: { padding: 14 } },
-                    React.createElement("div", { style: { fontSize: 20, fontWeight: 900, marginBottom: 12 } }, "🎫 My Bets"),
-                    React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12, overflowX: "auto" } },
-                        [{ id: "all", label: "All" }, { id: "pending", label: "⏳ Pending" }, { id: "won", label: "✅ Won" }, { id: "lost", label: "❌ Lost" }].map(f => React.createElement("div", { key: f.id, onClick: () => setMyBetsFilter(f.id), style: { minWidth: "fit-content", padding: "5px 12px", borderRadius: 20, cursor: "pointer", fontSize: 12, fontWeight: 700, background: myBetsFilter === f.id ? "#00c853" : "#1a2e22", color: myBetsFilter === f.id ? "#000" : "#e8f5e9", border: myBetsFilter === f.id ? "none" : "1px solid #2a4a32" } }, f.label))
-                    ),
-                    React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 } },
-                        [{ label: "Total Bets", value: myBets.length }, { label: "Won", value: myBets.filter(b => b.status === "won").length, color: "#00e676" }, { label: "Total Won", value: myBets.filter(b => b.status === "won").reduce((s, b) => s + b.payout, 0).toFixed(0), color: "#ffd700" }].map((s, i) => React.createElement("div", { key: i, style: { background: "#0f1f15", borderRadius: 8, padding: "10px 6px", textAlign: "center", border: "1px solid #1a2e22" } },
-                            React.createElement("div", { style: { fontSize: 18, fontWeight: 900, color: s.color || "#e8f5e9" } }, s.value),
-                            React.createElement("div", { style: { fontSize: 9, color: "#a5d6a7" } }, s.label)
-                        ))
-                    ),
-                    filteredMyBets.length === 0 && React.createElement("div", { style: { textAlign: "center", padding: "40px 0", opacity: 0.4, fontSize: 14 } }, "No bets found"),
-                    filteredMyBets.map(b => React.createElement("div", { key: b.id, style: { background: "#0f1f15", borderRadius: 10, padding: 13, marginBottom: 8, border: `1px solid ${b.status === "won" ? "#00c85344" : b.status === "lost" ? "#c6282844" : "#2a4a32"}` } },
-                        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 7 } },
-                            React.createElement("div", { style: { flex: 1, marginRight: 10 } },
-                                React.createElement("div", { style: { fontSize: 13, fontWeight: 700, marginBottom: 2, lineHeight: 1.3 } }, b.teams),
-                                React.createElement("div", { style: { fontSize: 11, color: "#a5d6a7" } }, "Pick: ", React.createElement("b", { style: { color: "#e8f5e9" } }, b.pick))
-                            ),
-                            React.createElement("span", { style: { fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 20, flexShrink: 0, background: b.status === "won" ? "#00c853" : b.status === "lost" ? "#c62828" : "#f9a825", color: b.status === "pending" ? "#000" : "#fff" } }, b.status.toUpperCase())
-                        ),
-                        React.createElement("div", { style: { display: "flex", gap: 12, fontSize: 11, flexWrap: "wrap" } },
-                            React.createElement("span", { style: { color: "#a5d6a7" } }, "📅 ", b.date),
-                            React.createElement("span", { style: { color: "#a5d6a7" } }, "Odds: ", React.createElement("b", { style: { color: "#ffd700" } }, b.odds)),
-                            React.createElement("span", { style: { color: "#a5d6a7" } }, "Stake: ", React.createElement("b", null, "KES ", b.stake))
-                        ),
-                        b.status !== "lost" && React.createElement("div", { style: { marginTop: 6, fontSize: 12, color: "#a5d6a7" } },
-                            b.status === "won" ? "✅ Won" : "💰 Potential", ": ", React.createElement("b", { style: { color: "#00e676", fontSize: 15 } }, "KES ", b.payout.toFixed(2))
-                        )
-                    ))
-                ),
-                activeTab === "account" && React.createElement("div", { style: { padding: 14 } },
-                    React.createElement("div", { style: { background: "#0f1f15", borderRadius: 12, padding: 18, border: "1px solid #1a2e22", marginBottom: 12 } },
-                        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 14, marginBottom: 14 } },
-                            React.createElement("div", { style: { width: 52, height: 52, borderRadius: "50%", background: "linear-gradient(135deg,#00c853,#00e676)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 900, color: "#000" } }, "J"),
-                            React.createElement("div", null,
-                                React.createElement("div", { style: { fontSize: 17, fontWeight: 700 } }, "John Doe"),
-                                React.createElement("div", { style: { fontSize: 12, color: "#a5d6a7" } }, "+254 700 000 000")
-                            )
-                        ),
-                        React.createElement("div", { style: { background: "#1a2e22", borderRadius: 8, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 } },
-                            React.createElement("div", null,
-                                React.createElement("div", { style: { fontSize: 10, color: "#a5d6a7" } }, "BALANCE"),
-                                React.createElement("div", { style: { fontSize: 22, fontWeight: 800, color: "#00e676" } }, "KES ", balance.toLocaleString("en-KE", { minimumFractionDigits: 2 }))
-                            ),
-                            React.createElement("div", { style: { display: "flex", gap: 8 } },
-                                React.createElement("div", { onClick: () => showToastMsg("Deposit demo", "info"), style: { background: "#00c853", borderRadius: 20, padding: "8px 18px", color: "#000", fontWeight: 700, fontSize: 13, cursor: "pointer" } }, "DEPOSIT"),
-                                React.createElement("div", { onClick: () => showToastMsg("Withdrawal request (demo)", "info"), style: { background: "#f9a825", borderRadius: 20, padding: "8px 18px", color: "#000", fontWeight: 700, fontSize: 13, cursor: "pointer" } }, "WITHDRAW")
-                            )
-                        ),
-                        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 } },
-                            React.createElement("div", { style: { background: "#1a2e22", borderRadius: 6, padding: "8px", textAlign: "center" } },
-                                React.createElement("div", { style: { fontSize: 11, color: "#a5d6a7" } }, "Pending Bets"),
-                                React.createElement("div", { style: { fontSize: 18, fontWeight: 800, color: "#ffd700" } }, pendingCount)
-                            ),
-                            React.createElement("div", { style: { background: "#1a2e22", borderRadius: 6, padding: "8px", textAlign: "center" } },
-                                React.createElement("div", { style: { fontSize: 11, color: "#a5d6a7" } }, "Winning Rate"),
-                                React.createElement("div", { style: { fontSize: 18, fontWeight: 800, color: "#00e676" } }, myBets.length > 0 ? Math.round((myBets.filter(b => b.status === "won").length / myBets.length) * 100) : 0, "%")
-                            )
-                        )
-                    ),
-                    [{ icon: "🎫", label: "My Bets", action: () => setActiveTab("mybets") }, { icon: "💰", label: "Transactions", action: () => showToastMsg("Transaction history demo", "info") }, { icon: "🎁", label: "Bonus & Offers", action: () => showToastMsg("No active offers", "info") }, { icon: "⚙️", label: "Settings", action: () => showToastMsg("Settings demo", "info") }].map((item, i) => React.createElement("div", { key: i, onClick: item.action, style: { background: "#0f1f15", borderRadius: 8, padding: "14px 16px", marginBottom: 6, border: "1px solid #1a2e22", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" } },
-                        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
-                            React.createElement("span", { style: { fontSize: 18 } }, item.icon),
-                            React.createElement("span", { style: { fontSize: 14, fontWeight: 600 } }, item.label)
-                        ),
-                        React.createElement("span", { style: { opacity: 0.4, fontSize: 18 } }, "›")
-                    )),
-                    // BETROD PARTNER SECTION
-                    React.createElement("div", { style: { marginTop: 12, background: "linear-gradient(135deg, #0d2818, #0a1f14)", borderRadius: 12, padding: 16, border: "2px solid #ffd700", position: "relative", overflow: "hidden" } },
-                        React.createElement("div", { style: { position: "absolute", top: -30, right: -30, width: 100, height: 100, background: "radial-gradient(circle, rgba(255,215,0,0.1) 0%, rgba(255,215,0,0) 70%)" } }),
-                        React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 } },
-                            React.createElement("div", null,
-                                React.createElement("div", { style: { fontSize: 20, fontWeight: 900, color: "#ffd700" } }, "BETROD"),
-                                React.createElement("div", { style: { fontSize: 10, color: "#a5d6a7", marginTop: 2 } }, "Premium Partner")
-                            ),
-                            React.createElement("div", { style: { fontSize: 40 } }, "⭐")
-                        ),
-                        React.createElement("div", { style: { fontSize: 12, color: "#e8f5e9", marginBottom: 12, lineHeight: 1.4 } },
-                            "Ready for an upgraded betting experience? Join Betrod for exclusive VIP perks, higher limits, and instant withdrawals."
-                        ),
-                        React.createElement("div", { onClick: () => { showToastMsg("See you at Betrod! Goodbye and good luck! 🎯", "success"); setTimeout(() => { window.open("https://betrod.com", "_blank"); }, 1500); }, style: { background: "linear-gradient(135deg, #ffd700, #ffed4e)", borderRadius: 8, padding: "10px", textAlign: "center", fontWeight: 800, fontSize: 13, color: "#000", cursor: "pointer" } },
-                            "EXPLORE BETROD →"
-                        ),
-                        React.createElement("div", { style: { fontSize: 9, color: "#4a6a52", textAlign: "center", marginTop: 10 } }, "Goodbye and good luck!")
-                    )
-                ),
-                // Footer with Betrod branding
-                React.createElement("div", { style: { textAlign: "center", padding: "16px 14px 20px", background: "linear-gradient(180deg, #0a0f0d, #050807)", borderTop: "1px solid #1a2e22", marginTop: 8 } },
-                    React.createElement("div", { style: { fontSize: 9, color: "#4a6a52", letterSpacing: 0.5 } }, "PARTNERED WITH"),
-                    React.createElement("div", { style: { fontSize: 16, fontWeight: 800, color: "#ffd700", marginTop: 3, marginBottom: 5 } }, "BETROD"),
-                    React.createElement("div", { style: { fontSize: 8, color: "#4a6a52" } }, "© 2025 Betika • Goodbye and good luck!")
-                ),
-                // Floating Betslip
-                betslip.length > 0 && !showBetslip && React.createElement("div", { onClick: () => setShowBetslip(true), style: { position: "fixed", bottom: 70, right: 14, background: "linear-gradient(135deg,#00c853,#00e676)", borderRadius: 30, padding: "11px 18px", color: "#000", fontWeight: 800, fontSize: 13, cursor: "pointer", zIndex: 200, boxShadow: "0 4px 20px rgba(0,200,83,0.5)", display: "flex", alignItems: "center", gap: 7 } },
-                    "🎫 BETSLIP",
-                    React.createElement("span", { style: { background: "#000", color: "#00e676", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900 } }, betslip.length)
-                ),
-                showBetslip && React.createElement("div", { className: "bslide", style: { position: "fixed", bottom: 60, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 420, background: "#0d2818", border: "2px solid #00c853", borderRadius: "16px 16px 0 0", zIndex: 300, maxHeight: "80vh", overflowY: "auto" } },
-                    React.createElement("div", { style: { padding: "11px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #1a2e22", position: "sticky", top: 0, background: "#0d2818" } },
-                        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
-                            React.createElement("span", null, "🎫"),
-                            React.createElement("span", { style: { fontSize: 15, fontWeight: 800 } }, "BETSLIP"),
-                            React.createElement("span", { style: { background: "#00c853", color: "#000", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900 } }, betslip.length)
-                        ),
-                        React.createElement("div", { style: { display: "flex", gap: 12 } },
-                            React.createElement("span", { onClick: clearBetslip, style: { cursor: "pointer", fontSize: 12, opacity: 0.6 } }, "Clear"),
-                            React.createElement("span", { onClick: () => setShowBetslip(false), style: { cursor: "pointer", fontSize: 20, opacity: 0.5 } }, "✕")
-                        )
-                    ),
-                    betPlaced ? React.createElement("div", { style: { textAlign: "center", padding: "30px 20px" } },
-                        React.createElement("div", { style: { fontSize: 52, marginBottom: 10 } }, "✅"),
-                        React.createElement("div", { style: { fontSize: 18, fontWeight: 800, color: "#00e676" } }, "BET PLACED!"),
-                        React.createElement("div", { style: { fontSize: 12, color: "#a5d6a7", marginTop: 5 } }, "Balance updated. Good luck!")
-                    ) : React.createElement("div", { style: { padding: 13 } },
-                        betslip.map(b => React.createElement("div", { key: b.key, style: { background: "#0f1f15", borderRadius: 8, padding: "9px 11px", marginBottom: 7, border: "1px solid #1a2e22", display: "flex", justifyContent: "space-between", alignItems: "center" } },
-                            React.createElement("div", null,
-                                React.createElement("div", { style: { fontSize: 12, fontWeight: 700 } }, b.label),
-                                React.createElement("div", { style: { fontSize: 10, color: "#a5d6a7" } }, b.home, " vs ", b.away),
-                                React.createElement("div", { style: { fontSize: 10, color: "#4a6a52" } }, b.league)
-                            ),
-                            React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
-                                React.createElement("span", { style: { fontSize: 15, fontWeight: 800, color: "#00e676" } }, b.odd),
-                                React.createElement("span", { onClick: () => removeFromSlip(b.key), style: { color: "#ff5252", cursor: "pointer", fontSize: 15, fontWeight: 700 } }, "✕")
-                            )
-                        )),
-                        React.createElement("div", { style: { background: "#1a2e22", borderRadius: 8, padding: "10px 12px", marginBottom: 10 } },
-                            React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 4 } },
-                                React.createElement("span", { style: { fontSize: 12, color: "#a5d6a7" } }, "Total Odds"),
-                                React.createElement("span", { style: { fontSize: 14, fontWeight: 800, color: "#ffd700" } }, totalOdds.toFixed(2))
-                            ),
-                            React.createElement("div", { style: { display: "flex", justifyContent: "space-between" } },
-                                React.createElement("span", { style: { fontSize: 12, color: "#a5d6a7" } }, "Potential Win"),
-                                React.createElement("span", { style: { fontSize: 14, fontWeight: 800, color: "#00e676" } }, "KES ", potentialWin)
-                            )
-                        ),
-                        React.createElement("div", { style: { marginBottom: 10 } },
-                            React.createElement("div", { style: { fontSize: 10, color: "#a5d6a7", marginBottom: 5 } }, "STAKE (KES)"),
-                            React.createElement("input", { type: "number", placeholder: "Min. KES 10", value: stakeInput, onChange: e => setStakeInput(e.target.value), style: { width: "100%", background: "#0a0f0d", border: "1px solid #00c853", borderRadius: 8, padding: "10px 12px", color: "#e8f5e9", fontSize: 16, fontWeight: 700, outline: "none" } }),
-                            React.createElement("div", { style: { display: "flex", gap: 5, marginTop: 7 } },
-                                ["50","100","200","500"].map(v => React.createElement("div", { key: v, onClick: () => setStakeInput(v), style: { flex: 1, background: "#1a2e22", borderRadius: 6, padding: "5px 0", textAlign: "center", fontSize: 12, fontWeight: 700, cursor: "pointer", border: stakeInput === v ? "1px solid #00c853" : "1px solid #2a4a32", color: stakeInput === v ? "#00e676" : "#e8f5e9" } }, v))
-                            )
-                        ),
-                        React.createElement("div", { onClick: placeBet, style: { background: betslip.length > 0 && stakeInput && parseFloat(stakeInput) >= 10 && parseFloat(stakeInput) <= balance ? "linear-gradient(135deg,#00c853,#00e676)" : "#1a2e22", color
+        function placeBet() {
+            if (isGameActive) {
+                if (elements.statusSpan) elements.statusSpan.innerHTML = "⏳ Round active! Wait for crash or cashout.";
+                return;
+            }
+            let amount = parseFloat(elements.betInput.value);
+            if (isNaN(amount) || amount < 10) {
+                if (elements.statusSpan) elements.statusSpan.innerHTML = "❌ Minimum bet $10";
+                return;
+            }
+            if (amount > balance) {
+                if (elements.statusSpan) elements.statusSpan.innerHTML = "❌ Insufficient balance!";
+                return;
+            }
+            balance -= amount;
+            currentBet = amount;
+            playSound('bet');
+            updateUI();
+            startRound();
+        }
+
+        function cashOut() {
+            if (!isGameActive || currentBet <= 0 || hasCashed) return;
+            if (currentMultiplier < 1.02) {
+                if (elements.statusSpan) elements.statusSpan.innerHTML = "⚠️ Multiplier too low! Wait a second.";
+                return;
+            }
+            let winAmount = currentBet * currentMultiplier;
+            balance += winAmount;
+            playSound('cashout');
+            hasCashed = true;
+            if (elements.statusSpan) elements.statusSpan.innerHTML = `💰 CASHED OUT $${winAmount.toFixed(2)} at ${currentMultiplier.toFixed(2)}x! 🎉`;
+            currentBet = 0;
+            updateUI();
+            if (elements.rocketIcon && animationsEnabled) elements.rocketIcon.classList.remove('flying');
+        }
+
+        // ========== BANKING & MODALS ==========
+        function showDeposit() {
+            let amt = parseFloat(prompt("💰 Deposit amount (min $10):", "50"));
+            if (amt >= 10) { balance += amt; updateUI(); if (elements.statusSpan) elements.statusSpan.innerHTML = `Deposited $${amt}`; }
+            else alert("Minimum deposit $10");
+        }
+        function showWithdraw() {
+            let amt = parseFloat(prompt("💸 Withdraw amount (min $100 from wallet):", "100"));
+            if (amt < 100) alert("Minimum withdraw $100");
+            else if (amt <= balance) { balance -= amt; updateUI(); if (elements.statusSpan) elements.statusSpan.innerHTML = `Withdrew $${amt}`; }
+            else alert("Insufficient wallet balance");
+        }
+        function showProfile() {
+            alert(`👤 PILOT: AERO_TRADER\n💰 Wallet: $${balance.toFixed(2)}\n🎁 Refer Bonus: $${referBonus.toFixed(2)} (need $1000)\n📊 Total flights: ${crashHistory.length}\n🔥 50x+ spikes active`);
+        }
+        function showManual() {
+            let modal = document.createElement('div'); modal.className = 'modal';
+            modal.innerHTML = `<div class="modal-card"><h2>📘 AERO CRASH MANUAL</h2>
+            <div class="manual-step"><strong>✈️ LIKE AVIATOR / JETX</strong><br>Turbo speed · Unpredictable crash</div>
+            <div class="manual-step"><strong>1.</strong> Deposit min $10.<br><strong>2.</strong> Enter BET (min $10) & click PLACE BET.<br><strong>3.</strong> Multiplier rises FAST. Click CASH OUT before random CRASH → WIN = BET x MULTIPLIER.<br><strong>4.</strong> If CRASH hits → you LOSE.<br><strong>5.</strong> Crash timing is random (1s - 18s). NO PATTERN!<br><strong>6.</strong> 50x+ spikes occur daily.<br><strong>7.</strong> Refer friends → $50 each (needs $1000 refer bonus to withdraw).<br><strong>8.</strong> Withdraw min $100.</div>
+            <button id="closeManualBtn" class="close-modal">Start Flying!</button></div>`;
+            document.body.appendChild(modal);
+            document.getElementById('closeManualBtn')?.addEventListener('click', () => modal.remove());
+        }
+        function showReferral() {
+            let code = "AERO" + Math.floor(Math.random() * 9999);
+            let modal = document.createElement('div'); modal.className = 'modal';
+            modal.innerHTML = `<div class="modal-card"><h3>🎁 REFER & EARN $50</h3><p>Your code: <strong>${code}</strong></p><p>Each referral gives $50 bonus! Need $1000 refer bonus to withdraw.</p><p>Current: $${referBonus.toFixed(2)}</p><button id="simulateRefer" class="chip">Simulate Referral +$50</button><br><button id="closeRef" class="close-modal">Close</button></div>`;
+            document.body.appendChild(modal);
+            document.getElementById('simulateRefer')?.addEventListener('click', () => { referBonus += 50; updateUI(); if (elements.statusSpan) elements.statusSpan.innerHTML = "+$50 Refer bonus!"; modal.remove(); });
+            document.getElementById('closeRef')?.addEventListener('click', () => modal.remove());
+        }
+
+        // ========== SIDEBAR & UI TOGGLES ==========
+        function closeSidebar() { if (elements.sidebar) elements.sidebar.classList.remove('open'); if (elements.overlay) elements.overlay.classList.remove('active'); }
+        function openSidebar() { if (elements.sidebar) elements.sidebar.classList.add('open'); if (elements.overlay) elements.overlay.classList.add('active'); }
+        if (elements.overlay) elements.overlay.addEventListener('click', closeSidebar);
+        if (elements.menuHyphen) elements.menuHyphen.addEventListener('click', (e) => { e.stopPropagation(); if (elements.sidebar && elements.sidebar.classList.contains('open')) closeSidebar(); else openSidebar(); });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && elements.sidebar && elements.sidebar.classList.contains('open')) closeSidebar(); });
+        if (elements.sidebar) elements.sidebar.addEventListener('click', (e) => e.stopPropagation());
+
+        function updateSidebarToggles() {
+            document.querySelectorAll('.toggle-switch').forEach(t => t.classList.remove('active'));
+            if (soundEnabled) document.getElementById('soundToggleSide')?.classList.add('active');
+            if (musicEnabled) document.getElementById('musicToggleSide')?.classList.add('active');
+            if (animationsEnabled) document.getElementById('animToggleSide')?.classList.add('active');
+            if (!darkMode) document.getElementById('darkLightToggle')?.classList.add('active');
+        }
+        function applyDarkLight() { if (darkMode) document.body.classList.remove('light-mode'); else document.body.classList.add('light-mode'); }
+        document.getElementById('darkLightToggle')?.addEventListener('click', () => { darkMode = !darkMode; applyDarkLight(); updateSidebarToggles(); });
+        document.getElementById('soundToggleSide')?.addEventListener('click', () => { soundEnabled = !soundEnabled; updateSidebarToggles(); });
+        document.getElementById('musicToggleSide')?.addEventListener('click', () => { musicEnabled = !musicEnabled; updateSidebarToggles(); });
+        document.getElementById('animToggleSide')?.addEventListener('click', () => { animationsEnabled = !animationsEnabled; if (!animationsEnabled && elements.rocketIcon) elements.rocketIcon.classList.remove('flying'); updateSidebarToggles(); });
+        document.getElementById('profileBtn')?.addEventListener('click', showProfile);
+        document.getElementById('depositBtnSide')?.addEventListener('click', showDeposit);
+        document.getElementById('withdrawBtnSide')?.addEventListener('click', showWithdraw);
+        document.getElementById('manualBtnSide')?.addEventListener('click', showManual);
+        document.getElementById('referBtnSide')?.addEventListener('click', showReferral);
+
+        // ========== EVENT LISTENERS & INIT ==========
+        document.querySelectorAll('.chip').forEach(btn => btn.addEventListener('click', (e) => {
+            let add = parseInt(btn.dataset.chip);
+            let newVal = parseFloat(elements.betInput.value) + add;
+            if (newVal > balance && !isGameActive) newVal = balance;
+            elements.betInput.value = Math.max(1, newVal.toFixed(2));
+        }));
+        if (elements.placeBtn) elements.placeBtn.addEventListener('click', placeBet);
+        if (elements.cashoutBtn) elements.cashoutBtn.addEventListener('click', cashOut);
+
+        // Initialize everything
+        renderLeaderboards();
+        updateUI();
+        applyDarkLight();
+        updateSidebarToggles();
+        if (elements.statusSpan) elements.statusSpan.innerHTML = "✈️ LIKE AVIATOR/JETX · TURBO SPEED · CRASH ANYTIME!";
+    })();
+</script>
+</body>
+            </html>
