@@ -1,0 +1,1434 @@
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+
+const rand = (min, max) => +(Math.random() * (max - min) + min).toFixed(2);
+const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+const fmtTime = (d) => d.toTimeString().slice(0, 5);
+const todayStr = () => new Date().toDateString();
+
+// NEW: Local storage keys
+const STORAGE_KEYS = {
+  BALANCE: 'betika_balance',
+  MY_BETS: 'betika_my_bets',
+  USER: 'betika_user',
+  SETTINGS: 'betika_settings'
+};
+
+// NEW: Default settings
+const DEFAULT_SETTINGS = {
+  notifications: true,
+  soundEffects: true,
+  darkMode: true,
+  autoClearBetslip: false,
+  defaultStake: 100
+};
+
+const LEAGUES = {
+  football: [
+    { name: "Premier League 🏴󠁧󠁢󠁥󠁮󠁧󠁿", teams: ["Man City","Arsenal","Chelsea","Liverpool","Man Utd","Tottenham","Newcastle","Brighton","Aston Villa","West Ham","Brentford","Fulham","Crystal Palace","Wolves","Everton","Nottm Forest"] },
+    { name: "La Liga 🇪🇸", teams: ["Real Madrid","Barcelona","Atletico Madrid","Sevilla","Real Sociedad","Villarreal","Athletic Bilbao","Real Betis","Valencia","Osasuna","Celta Vigo","Getafe","Las Palmas","Girona","Alaves","Rayo Vallecano"] },
+    { name: "Serie A 🇮🇹", teams: ["Inter Milan","AC Milan","Juventus","Napoli","AS Roma","Lazio","Fiorentina","Atalanta","Bologna","Torino","Udinese","Sassuolo","Empoli","Monza","Lecce","Frosinone"] },
+    { name: "Bundesliga 🇩🇪", teams: ["Bayern Munich","Dortmund","RB Leipzig","Leverkusen","Union Berlin","Freiburg","Eintracht Frankfurt","Wolfsburg","Hoffenheim","Mainz","Augsburg","Stuttgart","Köln","Bochum","Heidenheim","Werder Bremen"] },
+    { name: "Ligue 1 🇫🇷", teams: ["PSG","Monaco","Marseille","Lens","Lille","Rennes","Nice","Lyon","Montpellier","Strasbourg","Reims","Toulouse","Nantes","Clermont","Lorient","Brest"] },
+    { name: "Champions League 🏆", teams: ["Real Madrid","Man City","Bayern Munich","PSG","Inter Milan","Arsenal","Atletico Madrid","Dortmund","Barcelona","Benfica","Porto","Ajax","Celtic","Napoli","AC Milan","Shakhtar"] },
+    { name: "Europa League 🌍", teams: ["Liverpool","Roma","Bayer Leverkusen","Atalanta","Feyenoord","Sporting CP","Slavia Prague","Union SG","Rennes","Sheriff","Brighton","Ajax","Villarreal","Bodo/Glimt","Slavia Prague","Qarabag"] },
+    { name: "KPL Kenya 🇰🇪", teams: ["Gor Mahia","AFC Leopards","Tusker FC","Kakamega Homeboyz","KCB FC","Bandari","Mathare Utd","Sofapaka","Wazito","Posta Rangers","Ulinzi Stars","Western Stima","Nairobi City Stars","Muranga SEAL","Bidco Utd","Talanta FC"] },
+    { name: "AFCON 🌍", teams: ["Senegal","Nigeria","Egypt","Ivory Coast","Morocco","Ghana","Cameroon","Mali","Algeria","South Africa","DR Congo","Guinea","Tunisia","Zambia","Ethiopia","Comoros"] },
+    { name: "World Cup Quals 🌐", teams: ["Brazil","Argentina","France","England","Germany","Spain","Portugal","Netherlands","Belgium","Uruguay","Colombia","Ecuador","Chile","USA","Mexico","Japan"] },
+  ],
+  basketball: [
+    { name: "NBA 🇺🇸", teams: ["Lakers","Celtics","Warriors","Heat","Nuggets","Suns","Bucks","76ers","Clippers","Nets","Knicks","Bulls","Spurs","Mavericks","Hawks","Grizzlies","Cavaliers","Raptors","Pelicans","Thunder"] },
+    { name: "EuroLeague 🇪🇺", teams: ["Real Madrid","CSKA Moscow","Fenerbahce","Panathinaikos","Anadolu Efes","Bayern Munich","Maccabi Tel Aviv","Olympiacos","Barcelona","Zalgiris","Armani Milan","Valencia","Red Star","Partizan","AS Monaco","Baskonia"] },
+  ],
+  tennis: [
+    { name: "ATP Tour 🎾", teams: ["Djokovic N.","Alcaraz C.","Medvedev D.","Sinner J.","Zverev A.","Tsitsipas S.","Rublev A.","Fritz T.","Hurkacz H.","Norrie C.","Murray A.","Nadal R.","Berrettini M.","De Minaur A.","Dimitrov G.","Tiafoe F."] },
+    { name: "WTA Tour 🎾", teams: ["Swiatek I.","Sabalenka A.","Gauff C.","Rybakina E.","Pegula J.","Jabeur O.","Kvitova P.","Halep S.","Bencic B.","Keys M.","Sakkari M.","Ostapenko J.","Pliskova K.","Kontaveit A.","Muguruza G.","Andreescu B."] },
+  ],
+  rugby: [
+    { name: "Six Nations 🏉", teams: ["England","Ireland","France","Scotland","Wales","Italy"] },
+    { name: "Super Rugby 🏉", teams: ["Chiefs","Blues","Crusaders","Hurricanes","Highlanders","Sharks","Lions","Bulls","Stormers","Rebels","Waratahs","Brumbies","Force","Reds","Jaguares","Sunwolves"] },
+  ],
+  cricket: [
+    { name: "ICC T20 🏏", teams: ["India","Australia","England","Pakistan","New Zealand","South Africa","West Indies","Sri Lanka","Bangladesh","Afghanistan","Zimbabwe","Ireland","Scotland","Netherlands","UAE","Namibia"] },
+    { name: "IPL 🇮🇳", teams: ["Mumbai Indians","Chennai Super Kings","Royal Challengers","Delhi Capitals","Kolkata Knight Riders","Rajasthan Royals","Punjab Kings","Sunrisers Hyderabad","Lucknow Giants","Gujarat Titans"] },
+  ],
+  boxing: [
+    { name: "World Boxing 🥊", teams: ["Canelo Alvarez","Tyson Fury","Anthony Joshua","Oleksandr Usyk","Errol Spence","Terence Crawford","Gervonta Davis","Ryan Garcia","Devin Haney","Jose Ramirez","Lomachenko V.","Stevenson S.","Benavidez D.","Plant C.","Eubank C.","Garcia R."] },
+  ],
+};
+
+const generateDailyMatches = () => {
+  const now = new Date();
+  const matches = [];
+  let id = 1;
+  Object.entries(LEAGUES).forEach(([sport, leagues]) => {
+    leagues.forEach((league) => {
+      const teams = [...league.teams];
+      for (let i = teams.length - 1; i > 0; i--) {
+        const j = randInt(0, i);
+        [teams[i], teams[j]] = [teams[j], teams[i]];
+      }
+      const count = Math.min(Math.floor(teams.length / 2), sport === "football" ? 6 : 3);
+      for (let i = 0; i < count; i++) {
+        const home = teams[i * 2];
+        const away = teams[i * 2 + 1];
+        if (!home || !away) continue;
+        const kickoffH = randInt(9, 22);
+        const kickoffM = [0, 15, 30, 45][randInt(0, 3)];
+        const kickoff = new Date(now);
+        kickoff.setHours(kickoffH, kickoffM, 0, 0);
+        const minutesSince = (now - kickoff) / 60000;
+        const live = minutesSince > 0 && minutesSince < 95;
+        const finished = minutesSince >= 95;
+        const homeOdd = rand(1.4, 4.5);
+        const awayOdd = rand(1.4, 4.5);
+        const drawOdd = sport === "football" || sport === "rugby" ? rand(2.8, 5.5) : null;
+        matches.push({
+          id: id++, sport, league: league.name, home, away, live, finished,
+          liveMin: live ? Math.min(Math.floor(minutesSince), 90) : null,
+          score: live || finished ? `${randInt(0, 4)}-${randInt(0, 4)}` : null,
+          time: finished ? "FT" : live ? `LIVE ${Math.min(Math.floor(minutesSince), 90)}'` : fmtTime(kickoff),
+          odds: { home: homeOdd.toFixed(2), draw: drawOdd ? drawOdd.toFixed(2) : null, away: awayOdd.toFixed(2) },
+        });
+      }
+    });
+  });
+  return matches;
+};
+
+const CRASH_GAMES = [
+  { id: "aviator", name: "Aviator", icon: "✈️", color: "#c62828", desc: "Fly & cash out before crash!", provider: "Spribe", rtp: "97%", players: 1240 },
+  { id: "jetx", name: "JetX", icon: "🚀", color: "#1565c0", desc: "Rocket launch multiplier", provider: "SmartSoft", rtp: "96.5%", players: 876 },
+  { id: "crash", name: "Crash X", icon: "💥", color: "#6a1b9a", desc: "Classic crash betting", provider: "Betika", rtp: "96%", players: 654 },
+  { id: "spaceman", name: "Spaceman", icon: "👨‍🚀", color: "#00695c", desc: "Space multiplier game", provider: "Pragmatic", rtp: "96.5%", players: 432 },
+  { id: "plinko", name: "Plinko", icon: "🎯", color: "#e65100", desc: "Drop the ball & win", provider: "BGaming", rtp: "97%", players: 321 },
+];
+
+const LIVE_CASINO = [
+  { id: "baccarat", name: "Live Baccarat", icon: "🃏", color: "#b71c1c", desc: "Classic Baccarat Live", provider: "Evolution", rtp: "98.9%", players: 2100 },
+  { id: "roulette", name: "Live Roulette", icon: "🎡", color: "#1a237e", desc: "European Roulette Live", provider: "Evolution", rtp: "97.3%", players: 1850 },
+  { id: "blackjack", name: "Live Blackjack", icon: "♠️", color: "#212121", desc: "Infinite Blackjack", provider: "Evolution", rtp: "99.5%", players: 1600 },
+  { id: "poker", name: "Casino Hold'em", icon: "🤠", color: "#4a148c", desc: "Texas Hold'em Live", provider: "Evolution", rtp: "97.8%", players: 980 },
+  { id: "dreamcatcher", name: "Dream Catcher", icon: "🎰", color: "#004d40", desc: "Money Wheel Live", provider: "Evolution", rtp: "96.6%", players: 760 },
+  { id: "sicbo", name: "Sic Bo Live", icon: "🎲", color: "#bf360c", desc: "Asian Dice Game", provider: "Pragmatic", rtp: "97.2%", players: 540 },
+  { id: "dragonTiger", name: "Dragon Tiger", icon: "🐉", color: "#880e4f", desc: "Dragon vs Tiger", provider: "Pragmatic", rtp: "96.3%", players: 870 },
+  { id: "monopoly", name: "Monopoly Live", icon: "🎩", color: "#e65100", desc: "Board Game Show", provider: "Evolution", rtp: "96.2%", players: 1200 },
+  { id: "crazytime", name: "Crazy Time", icon: "🎪", color: "#6a1b9a", desc: "Ultimate Bonus Show", provider: "Evolution", rtp: "96.08%", players: 3200 },
+  { id: "lightning", name: "Lightning Roulette", icon: "⚡", color: "#f9a825", desc: "Lucky Number Strikes", provider: "Evolution", rtp: "97.3%", players: 2400 },
+];
+
+const VIRTUAL_SPORTS = [
+  { id: "vfootball", name: "Virtual Football", icon: "⚽", color: "#2e7d32", desc: "Matches every 3 mins", provider: "Kiron", rtp: "95%" },
+  { id: "vhorses", name: "Virtual Horses", icon: "🐎", color: "#4e342e", desc: "Races every 2 mins", provider: "Kiron", rtp: "95%" },
+  { id: "vgreyhounds", name: "Virtual Greyhounds", icon: "🐕", color: "#1565c0", desc: "Races every 2 mins", provider: "Betgames", rtp: "95%" },
+  { id: "vbasketball", name: "Virtual Basketball", icon: "🏀", color: "#e65100", desc: "Games every 5 mins", provider: "Kiron", rtp: "95%" },
+];
+
+const SLOTS = [
+  { id: "gates", name: "Gates of Olympus", icon: "⚡", color: "#1a237e", provider: "Pragmatic", rtp: "96.5%", maxWin: "5000x", hot: true },
+  { id: "bigbass", name: "Big Bass Bonanza", icon: "🎣", color: "#1b5e20", provider: "Pragmatic", rtp: "96.71%", maxWin: "2100x", hot: false },
+  { id: "sweet", name: "Sweet Bonanza", icon: "🍬", color: "#880e4f", provider: "Pragmatic", rtp: "96.51%", maxWin: "21100x", hot: true },
+  { id: "wolf", name: "Wolf Gold", icon: "🐺", color: "#4e342e", provider: "Pragmatic", rtp: "96%", maxWin: "2500x", hot: false },
+  { id: "starlight", name: "Starlight Princess", icon: "⭐", color: "#4a148c", provider: "Pragmatic", rtp: "96.5%", maxWin: "5000x", hot: true },
+  { id: "fishin", name: "Fishin' Frenzy", icon: "🐟", color: "#006064", provider: "Blueprint", rtp: "96.12%", maxWin: "1000x", hot: false },
+];
+
+// NEW: Toast notification component
+function Toast({ message, type, onClose }) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 3000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div style={{
+      position: "fixed",
+      top: 70,
+      left: "50%",
+      transform: "translateX(-50%)",
+      background: type === "success" ? "#00c853" : type === "error" ? "#c62828" : "#f9a825",
+      color: "#000",
+      padding: "10px 20px",
+      borderRadius: 8,
+      fontSize: 13,
+      fontWeight: 700,
+      zIndex: 1000,
+      animation: "fadeIn 0.2s ease",
+      maxWidth: "90%",
+      textAlign: "center",
+      boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
+    }}>
+      {message}
+    </div>
+  );
+}
+
+// NEW: Confirmation modal
+function ConfirmModal({ show, onConfirm, onCancel, message }) {
+  if (!show) return null;
+  return (
+    <div style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: "rgba(0,0,0,0.8)",
+      zIndex: 1000,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }}>
+      <div style={{
+        background: "#0d2818",
+        borderRadius: 16,
+        padding: 20,
+        width: "80%",
+        maxWidth: 300,
+        border: "1px solid #00c853"
+      }}>
+        <div style={{ fontSize: 14, marginBottom: 20, textAlign: "center" }}>{message}</div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={onCancel} style={{
+            flex: 1,
+            padding: "10px",
+            background: "#1a2e22",
+            border: "none",
+            borderRadius: 8,
+            color: "#e8f5e9",
+            fontWeight: 700,
+            cursor: "pointer"
+          }}>Cancel</button>
+          <button onClick={onConfirm} style={{
+            flex: 1,
+            padding: "10px",
+            background: "#00c853",
+            border: "none",
+            borderRadius: 8,
+            color: "#000",
+            fontWeight: 700,
+            cursor: "pointer"
+          }}>Confirm</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AviatorGame({ game, onUpdateBalance, currentBalance }) {
+  const REELS_SYM = ["🍒","🍋","🍊","⭐","💎","7️⃣","🔔","🎯","🍇","🍀"];
+  const [phase, setPhase] = useState("waiting");
+  const [multiplier, setMultiplier] = useState(1.00);
+  const [cashedOut, setCashedOut] = useState(null);
+  const [stake, setStake] = useState("100");
+  const [history, setHistory] = useState([14.2, 1.3, 3.7, 22.1, 1.01, 8.5, 2.3, 1.7, 45.2, 1.05]);
+  const [autoCash, setAutoCash] = useState("");
+  const [error, setError] = useState("");
+  const timerRef = useRef(null);
+  const startRef = useRef(null);
+  const crashAt = useRef(1);
+  const autoCashRef = useRef("");
+  autoCashRef.current = autoCash;
+
+  const validateStake = () => {
+    const stakeNum = parseFloat(stake);
+    if (isNaN(stakeNum) || stakeNum < 10) {
+      setError("Minimum stake is KES 10");
+      return false;
+    }
+    if (stakeNum > currentBalance) {
+      setError("Insufficient balance");
+      return false;
+    }
+    setError("");
+    return true;
+  };
+
+  const startRound = useCallback(() => {
+    if (!validateStake()) {
+      setPhase("waiting");
+      return;
+    }
+    
+    // Deduct stake
+    onUpdateBalance(-parseFloat(stake));
+    
+    const base = Math.random();
+    crashAt.current = base < 0.5 ? rand(1.01, 2) : base < 0.8 ? rand(2, 10) : rand(10, 100);
+    setCashedOut(null);
+    setMultiplier(1.00);
+    setPhase("flying");
+    startRef.current = Date.now();
+    timerRef.current = setInterval(() => {
+      const elapsed = (Date.now() - startRef.current) / 1000;
+      const m = Math.pow(Math.E, elapsed * 0.12);
+      const ac = parseFloat(autoCashRef.current);
+      if (!isNaN(ac) && ac > 1 && m >= ac) {
+        cashOutAuto(m);
+      }
+      if (m >= crashAt.current) {
+        setMultiplier(+crashAt.current.toFixed(2));
+        setPhase("crashed");
+        setHistory(h => [+crashAt.current.toFixed(2), ...h.slice(0, 9)]);
+        clearInterval(timerRef.current);
+        setTimeout(startRound, 4000);
+      } else {
+        setMultiplier(+m.toFixed(2));
+      }
+    }, 100);
+  }, [stake, currentBalance]);
+
+  const cashOutAuto = (m) => {
+    if (phase === "flying" && !cashedOut) {
+      const winAmount = parseFloat(stake) * m;
+      onUpdateBalance(winAmount);
+      setCashedOut(+m.toFixed(2));
+    }
+  };
+
+  const cashOut = () => { 
+    if (phase === "flying" && !cashedOut) {
+      const winAmount = parseFloat(stake) * multiplier;
+      onUpdateBalance(winAmount);
+      setCashedOut(multiplier);
+    }
+  };
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (validateStake()) {
+        startRound();
+      }
+    }, 3000);
+    return () => { clearTimeout(t); clearInterval(timerRef.current); };
+  }, [startRound]);
+
+  const mulColor = phase === "crashed" ? "#ff5252" : multiplier > 10 ? "#ffd700" : multiplier > 3 ? "#00e676" : "#e8f5e9";
+
+  return (
+    <div style={{ padding: 14 }}>
+      {error && <div style={{ background: "#c62828", padding: 8, borderRadius: 6, marginBottom: 10, fontSize: 12, textAlign: "center" }}>{error}</div>}
+      <div style={{ display: "flex", gap: 6, overflowX: "auto", marginBottom: 12, paddingBottom: 4 }}>
+        {history.map((h, i) => (
+          <span key={i} style={{
+            minWidth: 50, textAlign: "center", padding: "3px 6px", borderRadius: 20,
+            fontSize: 11, fontWeight: 700, whiteSpace: "nowrap",
+            background: h < 2 ? "#c62828" : h < 5 ? "#1565c0" : h < 20 ? "#6a1b9a" : "#b8860b",
+            color: "#fff",
+          }}>{h.toFixed(2)}x</span>
+        ))}
+      </div>
+      <div style={{
+        background: "radial-gradient(ellipse at center,#0d2818,#040a06)",
+        borderRadius: 14, height: 210, position: "relative", overflow: "hidden",
+        border: "1px solid #1a2e22", marginBottom: 14,
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        {[...Array(24)].map((_, i) => (
+          <div key={i} style={{ position: "absolute", width: 2, height: 2, borderRadius: "50%", background: "#fff", opacity: 0.25, left: `${randInt(3, 97)}%`, top: `${randInt(3, 97)}%` }} />
+        ))}
+        {phase === "waiting" ? (
+          <div style={{ textAlign: "center", opacity: 0.5 }}>
+            <div style={{ fontSize: 40 }}>{game.icon}</div>
+            <div style={{ fontSize: 13, marginTop: 8 }}>Next round starting...</div>
+            <div style={{ fontSize: 11, marginTop: 4, color: "#ffd700" }}>Stake: KES {stake}</div>
+          </div>
+        ) : (
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 44, filter: phase === "crashed" ? "grayscale(1)" : "none", marginBottom: 4 }}>
+              {phase === "crashed" ? "💥" : game.icon}
+            </div>
+            <div style={{ fontSize: 52, fontWeight: 900, color: mulColor, letterSpacing: 1, lineHeight: 1 }}>
+              {multiplier.toFixed(2)}x
+            </div>
+            {phase === "crashed" && <div style={{ fontSize: 13, color: "#ff5252", marginTop: 4 }}>CRASHED! Lost KES {stake}</div>}
+            {cashedOut && phase === "flying" && <div style={{ fontSize: 12, color: "#00e676", marginTop: 4 }}>Cashed out @ {cashedOut.toFixed(2)}x ✓ Won KES {(parseFloat(stake) * cashedOut).toFixed(0)}</div>}
+          </div>
+        )}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+        <div>
+          <div style={{ fontSize: 10, color: "#a5d6a7", marginBottom: 4 }}>STAKE (KES)</div>
+          <input value={stake} onChange={e => setStake(e.target.value)} type="number"
+            style={{ width: "100%", background: "#0f1f15", border: "1px solid #2a4a32", borderRadius: 8, padding: "9px 10px", color: "#e8f5e9", fontSize: 15, fontWeight: 700, outline: "none" }} />
+        </div>
+        <div>
+          <div style={{ fontSize: 10, color: "#a5d6a7", marginBottom: 4 }}>AUTO CASH OUT</div>
+          <input value={autoCash} onChange={e => setAutoCash(e.target.value)} type="number" placeholder="e.g. 2.00"
+            style={{ width: "100%", background: "#0f1f15", border: "1px solid #2a4a32", borderRadius: 8, padding: "9px 10px", color: "#e8f5e9", fontSize: 15, fontWeight: 700, outline: "none" }} />
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+        {["50","100","500","1000"].map(v => (
+          <div key={v} onClick={() => setStake(v)} style={{ flex: 1, background: stake === v ? "#00c853" : "#1a2e22", color: stake === v ? "#000" : "#e8f5e9", borderRadius: 6, padding: "5px 0", textAlign: "center", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{v}</div>
+        ))}
+      </div>
+      <div onClick={cashOut} style={{
+        background: phase === "flying" && !cashedOut ? "linear-gradient(135deg,#ff6f00,#ffa000)" : "#1a2e22",
+        color: phase === "flying" && !cashedOut ? "#000" : "#4a6a52",
+        borderRadius: 10, padding: "14px 0", textAlign: "center", fontWeight: 900, fontSize: 16,
+        cursor: phase === "flying" && !cashedOut ? "pointer" : "default",
+      }}>
+        {cashedOut ? `✓ Won KES ${(+stake * cashedOut).toFixed(0)}` : `CASH OUT @ ${multiplier.toFixed(2)}x = KES ${(+stake * multiplier).toFixed(0)}`}
+      </div>
+    </div>
+  );
+}
+
+function SlotGame({ game, onUpdateBalance, currentBalance }) {
+  const SYMS = ["🍒","🍋","🍊","⭐","💎","7️⃣","🔔","🎯","🍇","🍀"];
+  const [reels, setReels] = useState([["🍒","🍋","🍊"],["⭐","💎","7️⃣"],["🔔","🎯","🍒"]]);
+  const [spinning, setSpinning] = useState(false);
+  const [result, setResult] = useState(null);
+  const [stake, setStake] = useState("50");
+  const [winAmt, setWinAmt] = useState(null);
+  const [error, setError] = useState("");
+  const ivRefs = useRef([]);
+
+  const validateAndSpin = () => {
+    const stakeNum = parseFloat(stake);
+    if (isNaN(stakeNum) || stakeNum < 10) {
+      setError("Minimum stake is KES 10");
+      return;
+    }
+    if (stakeNum > currentBalance) {
+      setError("Insufficient balance");
+      return;
+    }
+    setError("");
+    spin();
+  };
+
+  const spin = () => {
+    if (spinning) return;
+    
+    // Deduct stake
+    onUpdateBalance(-parseFloat(stake));
+    
+    setSpinning(true); 
+    setResult(null); 
+    setWinAmt(null);
+    ivRefs.current.forEach(clearInterval);
+    ivRefs.current = [0, 1, 2].map(ri =>
+      setInterval(() => setReels(prev => prev.map((r, i) => i === ri ? [SYMS[randInt(0,9)],SYMS[randInt(0,9)],SYMS[randInt(0,9)]] : r)), 80)
+    );
+    const stops = [800, 1100, 1400];
+    stops.forEach((delay, ri) => setTimeout(() => clearInterval(ivRefs.current[ri]), delay));
+    setTimeout(() => {
+      const final = [0,1,2].map(() => [SYMS[randInt(0,9)],SYMS[randInt(0,9)],SYMS[randInt(0,9)]]);
+      setReels(final);
+      const mid = final.map(r => r[1]);
+      const win3 = mid[0] === mid[1] && mid[1] === mid[2];
+      const win2 = mid[0] === mid[1] || mid[1] === mid[2];
+      const mega = win3 && ["💎","7️⃣"].includes(mid[0]);
+      const mult = mega ? 50 : win3 ? randInt(5,20) : win2 ? 2 : 0;
+      if (mult > 0) { 
+        const win = parseFloat(stake) * mult;
+        onUpdateBalance(win);
+        setResult(mega ? "🏆 MEGA WIN!" : win3 ? "🎉 WIN!" : "✨ Small Win"); 
+        setWinAmt(win);
+      } else {
+        setResult("😢 No win this time");
+        setWinAmt(0);
+      }
+      setSpinning(false);
+    }, 1500);
+  };
+
+  return (
+    <div style={{ padding: 14 }}>
+      {error && <div style={{ background: "#c62828", padding: 8, borderRadius: 6, marginBottom: 10, fontSize: 12, textAlign: "center" }}>{error}</div>}
+      <div style={{ textAlign: "center", marginBottom: 12 }}>
+        <div style={{ fontSize: 22, fontWeight: 900 }}>{game.icon} {game.name}</div>
+        <div style={{ fontSize: 11, color: "#a5d6a7", fontFamily: "'Barlow',sans-serif" }}>{game.provider} • RTP {game.rtp} • Max {game.maxWin}</div>
+      </div>
+      <div style={{ background: "#0a0f0d", borderRadius: 14, padding: 14, border: "2px solid #2a4a32", marginBottom: 14 }}>
+        <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 8 }}>
+          {reels.map((reel, ri) => (
+            <div key={ri} style={{ background: "#0f1f15", borderRadius: 10, width: 82, overflow: "hidden", border: "1px solid #2a4a32" }}>
+              {reel.map((sym, si) => (
+                <div key={si} style={{
+                  height: 62, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30,
+                  background: si === 1 ? "rgba(0,200,83,0.12)" : "transparent",
+                  borderTop: si === 1 ? "1px solid #00c853" : "none",
+                  borderBottom: si === 1 ? "1px solid #00c853" : "none",
+                }}>{sym}</div>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div style={{ textAlign: "center", height: 50 }}>
+          {result && <div style={{ fontSize: result.includes("MEGA") ? 22 : 18, fontWeight: 900, color: result.includes("MEGA") ? "#ffd700" : winAmt > 0 ? "#00e676" : "#ff5252" }}>{result}{winAmt > 0 ? ` KES ${winAmt.toFixed(0)}` : ""}</div>}
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+        {["20","50","100","200","500"].map(v => (
+          <div key={v} onClick={() => setStake(v)} style={{ flex: 1, background: stake === v ? "#00c853" : "#1a2e22", color: stake === v ? "#000" : "#e8f5e9", borderRadius: 6, padding: "5px 0", textAlign: "center", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{v}</div>
+        ))}
+      </div>
+      <div onClick={validateAndSpin} style={{
+        background: spinning ? "#1a2e22" : "linear-gradient(135deg,#00c853,#00e676)",
+        color: spinning ? "#4a6a52" : "#000",
+        borderRadius: 10, padding: "14px 0", textAlign: "center", fontWeight: 900, fontSize: 17,
+        cursor: spinning ? "default" : "pointer", letterSpacing: 1,
+      }}>{spinning ? "SPINNING... 🎰" : `SPIN  •  KES ${stake}`}</div>
+    </div>
+  );
+}
+
+export default function BetikaApp() {
+  const [activeTab, setActiveTab] = useState("home");
+  const [activeSport, setActiveSport] = useState("football");
+  const [casinoSec, setCasinoSec] = useState("crash");
+  const [activeCrashGame, setActiveCrashGame] = useState(null);
+  const [activeSlot, setActiveSlot] = useState(null);
+  const [betslip, setBetslip] = useState([]);
+  const [selectedOdds, setSelectedOdds] = useState({});
+  const [stakeInput, setStakeInput] = useState("");
+  const [betPlaced, setBetPlaced] = useState(false);
+  const [showBetslip, setShowBetslip] = useState(false);
+  const [balance, setBalance] = useState(12450);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [matches, setMatches] = useState([]);
+  const [lastGenDate, setLastGenDate] = useState("");
+  const [leagueFilter, setLeagueFilter] = useState("All");
+  const [myBetsFilter, setMyBetsFilter] = useState("all");
+  
+  // NEW: Additional state
+  const [toast, setToast] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [showSettings, setShowSettings] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [referralCode, setReferralCode] = useState("BETIKA" + Math.floor(Math.random() * 10000));
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [depositAmount, setDepositAmount] = useState("");
+  const [promotionCode, setPromotionCode] = useState("");
+  const [liveChatOpen, setLiveChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState("");
+  
+  const [myBets, setMyBets] = useState([
+    { id: "b1", date: "Apr 22", teams: "Man City vs Arsenal", pick: "Man City", odds: "1.45", stake: 200, status: "won", payout: 290 },
+    { id: "b2", date: "Apr 22", teams: "Real Madrid vs Barca", pick: "Draw", odds: "3.40", stake: 100, status: "lost", payout: 0 },
+    { id: "b3", date: "Apr 21", teams: "Chelsea vs Liverpool", pick: "Liverpool", odds: "2.50", stake: 150, status: "pending", payout: 375 },
+    { id: "b4", date: "Apr 21", teams: "Lakers vs Celtics", pick: "Celtics", odds: "1.95", stake: 300, status: "won", payout: 585 },
+    { id: "b5", date: "Apr 20", teams: "Swiatek vs Sabalenka", pick: "Swiatek I.", odds: "1.75", stake: 100, status: "lost", payout: 0 },
+  ]);
+
+  // NEW: Load data from localStorage on mount
+  useEffect(() => {
+    const savedBalance = localStorage.getItem(STORAGE_KEYS.BALANCE);
+    if (savedBalance) setBalance(parseFloat(savedBalance));
+    
+    const savedBets = localStorage.getItem(STORAGE_KEYS.MY_BETS);
+    if (savedBets) setMyBets(JSON.parse(savedBets));
+    
+    const savedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+    if (savedSettings) setSettings(JSON.parse(savedSettings));
+  }, []);
+
+  // NEW: Save data to localStorage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.BALANCE, balance.toString());
+  }, [balance]);
+  
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.MY_BETS, JSON.stringify(myBets));
+  }, [myBets]);
+  
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+  }, [settings]);
+
+  // NEW: Show toast notification
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+  };
+
+  // NEW: Update balance with validation
+  const updateBalance = (amount) => {
+    const newBalance = balance + amount;
+    if (newBalance < 0) {
+      showToast("Insufficient balance!", "error");
+      return false;
+    }
+    setBalance(newBalance);
+    
+    // Add notification for large wins
+    if (amount > 1000) {
+      addNotification(`🎉 You won KES ${amount.toFixed(0)}!`, "win");
+    }
+    return true;
+  };
+
+  // NEW: Add notification
+  const addNotification = (message, type = "info") => {
+    setNotifications(prev => [{
+      id: Date.now(),
+      message,
+      type,
+      timestamp: new Date(),
+      read: false
+    }, ...prev].slice(0, 20));
+    
+    if (settings.notifications) {
+      // Browser notification (if permitted)
+      if ("Notification" in window && Notification.permission === "granted") {
+        new Notification("Betika", { body: message });
+      }
+    }
+  };
+
+  // NEW: Request notification permission
+  const requestNotificationPermission = () => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  };
+
+  useEffect(() => {
+    requestNotificationPermission();
+  }, []);
+
+  // NEW: Clear betslip with confirmation
+  const clearBetslip = () => {
+    setConfirmAction(() => () => {
+      setBetslip([]);
+      setSelectedOdds({});
+      setShowBetslip(false);
+      showToast("Betslip cleared", "info");
+    });
+    setShowConfirmModal(true);
+  };
+
+  // NEW: Enhanced place bet with validation
+  const placeBet = () => {
+    if (betslip.length === 0) {
+      showToast("Please select at least one bet", "error");
+      return;
+    }
+    
+    if (!stakeInput || parseFloat(stakeInput) < 10) {
+      showToast("Minimum stake is KES 10", "error");
+      return;
+    }
+    
+    if (parseFloat(stakeInput) > balance) {
+      showToast("Insufficient balance", "error");
+      return;
+    }
+    
+    setBetPlaced(true);
+    const nb = {
+      id: `b${Date.now()}`,
+      date: "Today",
+      teams: betslip.map(b => `${b.home} vs ${b.away}`).join(", "),
+      pick: betslip.map(b => b.label).join(" + "),
+      odds: totalOdds.toFixed(2),
+      stake: parseFloat(stakeInput),
+      status: "pending",
+      payout: parseFloat(potentialWin),
+    };
+    setMyBets(prev => [nb, ...prev]);
+    updateBalance(-parseFloat(stakeInput));
+    showToast(`Bet placed! Potential win: KES ${parseFloat(potentialWin).toFixed(0)}`, "success");
+    addNotification(`Bet placed on ${betslip.length} selection(s)`, "bet");
+    
+    setTimeout(() => { 
+      setBetPlaced(false); 
+      if (settings.autoClearBetslip) {
+        setBetslip([]);
+        setSelectedOdds({});
+      }
+      setStakeInput(""); 
+      setShowBetslip(false);
+    }, 2500);
+  };
+
+  // NEW: Deposit function
+  const handleDeposit = () => {
+    const amount = parseFloat(depositAmount);
+    if (isNaN(amount) || amount < 100) {
+      showToast("Minimum deposit is KES 100", "error");
+      return;
+    }
+    
+    // Apply promotion code if any
+    let bonus = 0;
+    if (promotionCode === "WELCOME100") {
+      bonus = amount;
+      showToast("Welcome bonus applied! +100% bonus", "success");
+    } else if (promotionCode === "EXTRA50") {
+      bonus = amount * 0.5;
+      showToast("50% bonus applied!", "success");
+    }
+    
+    updateBalance(amount + bonus);
+    showToast(`Deposited KES ${amount}${bonus > 0 ? ` + KES ${bonus} bonus` : ""}`, "success");
+    setShowDepositModal(false);
+    setDepositAmount("");
+    setPromotionCode("");
+  };
+
+  // NEW: Withdrawal request
+  const requestWithdrawal = () => {
+    setConfirmAction(() => () => {
+      showToast("Withdrawal request submitted. Processing time: 24-48 hours", "info");
+      addNotification("Withdrawal request submitted", "info");
+    });
+    setShowConfirmModal(true);
+  };
+
+  const toggleOdd = (matchId, market, odd, home, away, league) => {
+    if (activeTab !== "home") return;
+    
+    const key = `${matchId}-${market}`;
+    if (selectedOdds[key]) {
+      const n = { ...selectedOdds }; delete n[key]; setSelectedOdds(n);
+      setBetslip(prev => prev.filter(b => b.key !== key));
+      showToast(`Removed ${market} from betslip`, "info");
+    } else {
+      const label = market === "home" ? home : market === "away" ? away : "Draw";
+      setSelectedOdds(prev => ({ ...prev, [key]: true }));
+      setBetslip(prev => [...prev, { key, matchId, market, odd, label, home, away, league }]);
+      showToast(`Added ${label} to betslip`, "success");
+    }
+  };
+
+  const removeFromSlip = key => {
+    const n = { ...selectedOdds }; delete n[key]; setSelectedOdds(n);
+    setBetslip(prev => prev.filter(b => b.key !== key));
+    showToast("Removed from betslip", "info");
+  };
+
+  const totalOdds = betslip.reduce((a, b) => a * parseFloat(b.odd), 1);
+  const potentialWin = stakeInput ? (parseFloat(stakeInput) * totalOdds).toFixed(2) : "0.00";
+
+  const filteredMyBets = myBets.filter(b => myBetsFilter === "all" || b.status === myBetsFilter);
+  const pendingCount = myBets.filter(b => b.status === "pending").length;
+
+  const filteredMatches = useMemo(() => 
+    matches.filter(m =>
+      m.sport === activeSport &&
+      (searchQuery === "" || m.home.toLowerCase().includes(searchQuery.toLowerCase()) || m.away.toLowerCase().includes(searchQuery.toLowerCase())) &&
+      (leagueFilter === "All" || m.league === leagueFilter)
+    ),
+    [matches, activeSport, searchQuery, leagueFilter]
+  );
+
+  const leaguesForSport = LEAGUES[activeSport]?.map(l => l.name) || [];
+
+  return (
+    <div style={{ fontFamily: "'Barlow Condensed','Oswald',sans-serif", background: "#0a0f0d", minHeight: "100vh", color: "#e8f5e9", maxWidth: 420, margin: "0 auto", position: "relative" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Barlow:wght@400;500;600&display=swap');
+        *{box-sizing:border-box;margin:0;padding:0}
+        ::-webkit-scrollbar{width:0;height:0}
+        .hov{transition:all 0.15s;cursor:pointer}
+        .hov:hover{filter:brightness(1.2)}
+        .stab{transition:all 0.2s;cursor:pointer}
+        .stab:active{transform:scale(0.95)}
+        .nav{transition:all 0.2s;cursor:pointer}
+        .bslide{animation:slideUp 0.3s ease}
+        .plive{animation:pulse 1.5s infinite}
+        .mcard{transition:background 0.15s}
+        .mcard:hover{background:#1a2e22!important}
+        .gcard{transition:transform 0.2s,box-shadow 0.2s;cursor:pointer}
+        .gcard:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.6)}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+        @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+        .fin{animation:fadeIn 0.2s ease forwards}
+        input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+        input::placeholder{opacity:0.4}
+      `}</style>
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      <ConfirmModal show={showConfirmModal} onConfirm={() => { confirmAction?.(); setShowConfirmModal(false); setConfirmAction(null); }} onCancel={() => setShowConfirmModal(false)} message="Are you sure?" />
+
+      {/* NEW: Live Chat Widget */}
+      {liveChatOpen && (
+        <div style={{
+          position: "fixed",
+          bottom: 70,
+          right: 14,
+          width: 300,
+          height: 400,
+          background: "#0d2818",
+          borderRadius: 12,
+          border: "1px solid #00c853",
+          zIndex: 250,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          animation: "slideIn 0.3s ease"
+        }}>
+          <div style={{
+            padding: "10px 12px",
+            background: "linear-gradient(135deg,#00c853,#00e676)",
+            color: "#000",
+            fontWeight: 700,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center"
+          }}>
+            <span>💬 Live Support</span>
+            <span onClick={() => setLiveChatOpen(false)} style={{ cursor: "pointer", fontSize: 18 }}>✕</span>
+          </div>
+          <div style={{ flex: 1, overflowY: "auto", padding: 12 }}>
+            {chatMessages.map((msg, i) => (
+              <div key={i} style={{ marginBottom: 8, textAlign: msg.isUser ? "right" : "left" }}>
+                <div style={{
+                  display: "inline-block",
+                  background: msg.isUser ? "#00c853" : "#1a2e22",
+                  padding: "6px 10px",
+                  borderRadius: 8,
+                  fontSize: 12,
+                  maxWidth: "85%",
+                  color: msg.isUser ? "#000" : "#e8f5e9"
+                }}>
+                  {msg.text}
+                </div>
+                <div style={{ fontSize: 9, color: "#4a6a52", marginTop: 2 }}>{msg.time}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ padding: 10, borderTop: "1px solid #1a2e22", display: "flex", gap: 6 }}>
+            <input
+              value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              onKeyPress={e => e.key === "Enter" && (() => {
+                if (chatInput.trim()) {
+                  setChatMessages(prev => [...prev, {
+                    text: chatInput,
+                    isUser: true,
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  }]);
+                  setTimeout(() => {
+                    setChatMessages(prev => [...prev, {
+                      text: "Thank you for contacting support. How can I help you today?",
+                      isUser: false,
+                      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    }]);
+                  }, 1000);
+                  setChatInput("");
+                }
+              })()}
+              placeholder="Type your message..."
+              style={{ flex: 1, background: "#0a0f0d", border: "1px solid #2a4a32", borderRadius: 6, padding: "6px 10px", color: "#e8f5e9", fontSize: 12 }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* NEW: Deposit Modal */}
+      {showDepositModal && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(0,0,0,0.9)",
+          zIndex: 1000,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}>
+          <div style={{
+            background: "#0d2818",
+            borderRadius: 16,
+            padding: 20,
+            width: "85%",
+            maxWidth: 350,
+            border: "1px solid #00c853"
+          }}>
+            <div style={{ fontSize: 20, fontWeight: 900, marginBottom: 16, textAlign: "center" }}>Deposit Funds</div>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 12, color: "#a5d6a7", marginBottom: 4 }}>Amount (KES)</div>
+              <input
+                type="number"
+                value={depositAmount}
+                onChange={e => setDepositAmount(e.target.value)}
+                placeholder="Min. KES 100"
+                style={{ width: "100%", background: "#0a0f0d", border: "1px solid #2a4a32", borderRadius: 8, padding: "10px", color: "#e8f5e9", fontSize: 14 }}
+              />
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 12, color: "#a5d6a7", marginBottom: 4 }}>Promotion Code (Optional)</div>
+              <input
+                type="text"
+                value={promotionCode}
+                onChange={e => setPromotionCode(e.target.value.toUpperCase())}
+                placeholder="WELCOME100, EXTRA50"
+                style={{ width: "100%", background: "#0a0f0d", border: "1px solid #2a4a32", borderRadius: 8, padding: "10px", color: "#e8f5e9", fontSize: 14 }}
+              />
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => setShowDepositModal(false)} style={{
+                flex: 1,
+                padding: "12px",
+                background: "#1a2e22",
+                border: "none",
+                borderRadius: 8,
+                color: "#e8f5e9",
+                fontWeight: 700,
+                cursor: "pointer"
+              }}>Cancel</button>
+              <button onClick={handleDeposit} style={{
+                flex: 1,
+                padding: "12px",
+                background: "linear-gradient(135deg,#00c853,#00e676)",
+                border: "none",
+                borderRadius: 8,
+                color: "#000",
+                fontWeight: 700,
+                cursor: "pointer"
+              }}>Deposit</button>
+            </div>
+            <div style={{ fontSize: 10, color: "#4a6a52", textAlign: "center", marginTop: 12 }}>
+              Secure payment via M-Pesa
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* HEADER */}
+      <div style={{ background: "linear-gradient(180deg,#0d2818,#0a1f14)", padding: "0 12px", borderBottom: "2px solid #00c853", position: "sticky", top: 0, zIndex: 100 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 50 }}>
+          <div style={{ background: "linear-gradient(135deg,#00c853,#00e676)", borderRadius: 6, padding: "4px 10px", fontWeight: 900, fontSize: 20, letterSpacing: 1, color: "#000" }}>BETIKA</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ background: "#1a2e22", borderRadius: 20, padding: "4px 12px", fontSize: 12, color: "#00e676", fontWeight: 700 }}>KES {balance.toLocaleString("en-KE", { minimumFractionDigits: 2 })}</div>
+            <div onClick={() => setShowDepositModal(true)} style={{ background: "#00c853", borderRadius: 20, padding: "4px 12px", fontSize: 12, color: "#000", fontWeight: 700, cursor: "pointer" }}>DEPOSIT</div>
+          </div>
+        </div>
+        {activeTab === "home" && (
+          <div style={{ paddingBottom: 8 }}>
+            <div style={{ background: "#1a2e22", borderRadius: 8, display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", border: "1px solid #2a4a32" }}>
+              <span style={{ fontSize: 13, opacity: 0.45 }}>🔍</span>
+              <input placeholder="Search teams, leagues..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                style={{ background: "none", border: "none", outline: "none", color: "#e8f5e9", fontSize: 13, width: "100%", fontFamily: "'Barlow',sans-serif" }} />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ═══ HOME ═══ */}
+      {activeTab === "home" && (
+        <div>
+          <div style={{ overflowX: "auto", display: "flex", gap: 10, padding: "10px 12px" }}>
+            {PROMOTIONS.map(p => (
+              <div key={p.id} style={{ minWidth: 265, background: `linear-gradient(135deg,${p.color}cc,${p.color}44)`, border: `1px solid ${p.color}`, borderRadius: 10, padding: "12px 14px", cursor: "pointer", position: "relative", overflow: "hidden" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                  <span style={{ background: "#00c853", color: "#000", fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 4 }}>{p.badge}</span>
+                  <span style={{ fontSize: 14, fontWeight: 800 }}>{p.title}</span>
+                </div>
+                <div style={{ fontSize: 11, opacity: 0.85, fontFamily: "'Barlow',sans-serif" }}>{p.desc}</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ margin: "0 12px 8px", background: "linear-gradient(90deg,#8b0000,#c62828)", borderRadius: 8, padding: "7px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <span className="plive" style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: "#ff5252" }} />
+              <span style={{ fontSize: 12, fontWeight: 700 }}>LIVE NOW</span>
+            </div>
+            <span style={{ fontSize: 11, color: "#ffcdd2" }}>{matches.filter(m => m.live).length} in play →</span>
+          </div>
+
+          <div style={{ overflowX: "auto", display: "flex", padding: "0 12px 8px", gap: 6 }}>
+            {SPORTS_LIST.map(s => (
+              <div key={s.id} className="stab" onClick={() => { setActiveSport(s.id); setLeagueFilter("All"); }}
+                style={{ minWidth: "fit-content", padding: "6px 12px", borderRadius: 20, background: activeSport === s.id ? "#00c853" : "#1a2e22", color: activeSport === s.id ? "#000" : "#a5d6a7", fontSize: 12, fontWeight: activeSport === s.id ? 700 : 500, border: activeSport === s.id ? "none" : "1px solid #2a4a32", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
+                <span style={{ fontSize: 14 }}>{s.icon}</span>{s.label}
+              </div>
+            ))}
+          </div>
+
+          <div style={{ overflowX: "auto", display: "flex", padding: "0 12px 8px", gap: 5 }}>
+            {["All", ...leaguesForSport].map(l => (
+              <div key={l} onClick={() => setLeagueFilter(l)} style={{ minWidth: "fit-content", padding: "3px 9px", borderRadius: 20, background: leagueFilter === l ? "#1a7a3c" : "#0f1f15", border: leagueFilter === l ? "1px solid #00c853" : "1px solid #1a2e22", fontSize: 10, fontWeight: 600, whiteSpace: "nowrap", cursor: "pointer" }}>{l}</div>
+            ))}
+          </div>
+
+          <div style={{ padding: "0 12px" }}>
+            {filteredMatches.length === 0 && <div style={{ textAlign: "center", padding: "40px 0", opacity: 0.4, fontSize: 14 }}>{matches.length === 0 ? "Loading daily matches..." : "No matches found"}</div>}
+            {filteredMatches.map(m => (
+              <div key={m.id} className="mcard fin" style={{ background: "#0f1f15", borderRadius: 10, marginBottom: 7, border: "1px solid #1a2e22", overflow: "hidden" }}>
+                <div style={{ padding: "5px 12px", background: m.live ? "rgba(139,0,0,0.3)" : m.finished ? "#0a0f0d" : "#0d1a11", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #1a2e22" }}>
+                  <span style={{ fontSize: 10, color: "#a5d6a7", fontFamily: "'Barlow',sans-serif" }}>{m.league}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    {m.live && <span className="plive" style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: "#ff5252" }} />}
+                    <span style={{ fontSize: 10, fontWeight: 700, color: m.live ? "#ff5252" : m.finished ? "#666" : "#a5d6a7" }}>{m.time}</span>
+                  </div>
+                </div>
+                <div style={{ padding: "8px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>{m.home}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#a5d6a7" }}>{m.away}</div>
+                  </div>
+                  {m.score && <div style={{ background: "#1a2e22", borderRadius: 6, padding: "4px 10px", fontWeight: 800, fontSize: 15, border: "1px solid #2a4a32", letterSpacing: 2 }}>{m.score}</div>}
+                </div>
+                <div style={{ padding: "0 12px 8px", display: "flex", gap: 5 }}>
+                  {[{ market: "home", label: "1", value: m.odds.home }, m.odds.draw ? { market: "draw", label: "X", value: m.odds.draw } : null, { market: "away", label: "2", value: m.odds.away }].filter(Boolean).map(o => {
+                    const key = `${m.id}-${o.market}`; const sel = !!selectedOdds[key];
+                    return (
+                      <div key={o.market} className="hov" onClick={() => !m.finished && toggleOdd(m.id, o.market, o.value, m.home, m.away, m.league)}
+                        style={{ flex: 1, background: sel ? "#00c853" : "#1a2e22", borderRadius: 7, padding: "7px 3px", textAlign: "center", border: sel ? "1px solid #00e676" : "1px solid #2a4a32", opacity: m.finished ? 0.45 : 1 }}>
+                        <div style={{ fontSize: 9, color: sel ? "#000" : "#a5d6a7", marginBottom: 1 }}>{o.label}</div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: sel ? "#000" : "#e8f5e9" }}>{o.value}</div>
+                      </div>
+                    );
+                  })}
+                  <div className="hov" style={{ width: 32, background: "#1a2e22", borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #2a4a32", fontSize: 13, fontWeight: 700 }}>+</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ JACKPOT ═══ */}
+      {activeTab === "jackpot" && (
+        <div style={{ padding: 14 }}>
+          {[{ label: "🏆 MEGA JACKPOT", amount: "KES 50,000,000", sub: "Predict 17 matches • KES 99", grad: "linear-gradient(135deg,#b8860b,#ffd700,#b8860b)", tc: "#000" }, { label: "⚡ MIDWEEK JACKPOT", amount: "KES 5,000,000", sub: "Predict 13 matches • KES 49", grad: "linear-gradient(135deg,#1a2e22,#0f1f15)", tc: "#00e676" }].map((jp, i) => (
+            <div key={i} style={{ background: jp.grad, borderRadius: 14, padding: "20px", textAlign: "center", marginBottom: 14, border: i === 1 ? "1px solid #2a4a32" : "none" }}>
+              <div style={{ fontSize: 12, color: jp.tc, fontWeight: 600, marginBottom: 4, opacity: 0.7 }}>{jp.label}</div>
+              <div style={{ fontSize: 30, fontWeight: 900, color: jp.tc, letterSpacing: 1 }}>{jp.amount}</div>
+              <div style={{ fontSize: 11, color: jp.tc, marginTop: 4, opacity: 0.7 }}>{jp.sub}</div>
+            </div>
+          ))}
+          {Array.from({ length: 13 }).map((_, i) => (
+            <div key={i} style={{ background: "#0f1f15", borderRadius: 8, padding: "10px 12px", marginBottom: 6, border: "1px solid #1a2e22" }}>
+              <div style={{ fontSize: 10, color: "#4a6a52", marginBottom: 4 }}>Match {i + 1}</div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 13, fontWeight: 700 }}>Team A vs Team B</span>
+                <div style={{ display: "flex", gap: 4 }}>
+                  {["1", "X", "2"].map(o => <div key={o} style={{ background: "#1a2e22", borderRadius: 6, padding: "4px 10px", fontSize: 12, fontWeight: 700, cursor: "pointer", border: "1px solid #2a4a32" }}>{o}</div>)}
+                </div>
+              </div>
+            </div>
+          ))}
+          <div style={{ background: "linear-gradient(135deg,#00c853,#00e676)", borderRadius: 10, padding: "13px 0", textAlign: "center", fontSize: 15, fontWeight: 800, color: "#000", cursor: "pointer", marginTop: 8 }}>PLAY JACKPOT • KES 49</div>
+        </div>
+      )}
+
+      {/* ═══ CASINO ═══ */}
+      {activeTab === "casino" && (
+        <div>
+          {(activeCrashGame || activeSlot) ? (
+            <div>
+              <div style={{ padding: "10px 14px", borderBottom: "1px solid #1a2e22", display: "flex", alignItems: "center", gap: 8 }}>
+                <div onClick={() => { setActiveCrashGame(null); setActiveSlot(null); }} style={{ color: "#00e676", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>← Back</div>
+                <span style={{ fontSize: 14, fontWeight: 800 }}>{activeCrashGame ? activeCrashGame.name : activeSlot?.name}</span>
+              </div>
+              {activeCrashGame && <AviatorGame game={activeCrashGame} onUpdateBalance={updateBalance} currentBalance={balance} />}
+              {activeSlot && <SlotGame game={activeSlot} onUpdateBalance={updateBalance} currentBalance={balance} />}
+            </div>
+          ) : (
+            <>
+              <div style={{ display: "flex", borderBottom: "1px solid #1a2e22", background: "#0a0f0d", position: "sticky", top: 0, zIndex: 50 }}>
+                {[{ id: "crash", label: "💥 Crash", count: CRASH_GAMES.length }, { id: "live", label: "🃏 Live", count: LIVE_CASINO.length }, { id: "virtual", label: "🎮 Virtual", count: VIRTUAL_SPORTS.length }, { id: "slots", label: "🎰 Slots", count: SLOTS.length }].map(s => (
+                  <div key={s.id} onClick={() => setCasinoSec(s.id)} style={{ flex: 1, padding: "10px 2px", textAlign: "center", cursor: "pointer", fontSize: 11, fontWeight: 700, color: casinoSec === s.id ? "#00e676" : "#4a6a52", borderBottom: casinoSec === s.id ? "2px solid #00c853" : "2px solid transparent", background: casinoSec === s.id ? "#0f1f15" : "none" }}>
+                    {s.label}<span style={{ display: "block", fontSize: 9, color: "#2a4a32", marginTop: 1 }}>{s.count} games</span>
+                  </div>
+                ))}
+              </div>
+
+              {casinoSec === "crash" && (
+                <div style={{ padding: 14 }}>
+                  <div style={{ fontSize: 11, color: "#a5d6a7", marginBottom: 10, fontFamily: "'Barlow',sans-serif" }}>🔥 Cash out before it crashes!</div>
+                  {CRASH_GAMES.map(g => (
+                    <div key={g.id} className="gcard" onClick={() => setActiveCrashGame(g)}
+                      style={{ background: `linear-gradient(135deg,${g.color}33,#0f1f15)`, border: `1px solid ${g.color}55`, borderRadius: 12, padding: 14, marginBottom: 10, display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{ width: 54, height: 54, borderRadius: 12, background: `linear-gradient(135deg,${g.color},${g.color}88)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>{g.icon}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 17, fontWeight: 800 }}>{g.name}</div>
+                        <div style={{ fontSize: 11, color: "#a5d6a7", fontFamily: "'Barlow',sans-serif" }}>{g.desc}</div>
+                        <div style={{ display: "flex", gap: 8, marginTop: 3 }}>
+                          <span style={{ fontSize: 10, color: "#4a6a52" }}>{g.provider}</span>
+                          <span style={{ fontSize: 10, color: "#00e676" }}>RTP {g.rtp}</span>
+                          <span style={{ fontSize: 10, color: "#ff9800" }}>🔴 {g.players.toLocaleString()}</span>
+                        </div>
+                      </div>
+                      <div style={{ background: "#00c853", borderRadius: 8, padding: "8px 12px", color: "#000", fontWeight: 700, fontSize: 12, flexShrink: 0 }}>PLAY</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {casinoSec === "live" && (
+                <div style={{ padding: 14 }}>
+                  <div style={{ fontSize: 11, color: "#a5d6a7", marginBottom: 10, fontFamily: "'Barlow',sans-serif" }}>🎥 Real dealers streaming live 24/7</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    {LIVE_CASINO.map(g => (
+                      <div key={g.id} className="gcard" style={{ background: `linear-gradient(160deg,${g.color}44,#0f1f15)`, border: `1px solid ${g.color}55`, borderRadius: 12, padding: 12, cursor: "pointer" }}>
+                        <div style={{ fontSize: 30, textAlign: "center", marginBottom: 6 }}>{g.icon}</div>
+                        <div style={{ fontSize: 13, fontWeight: 800, textAlign: "center" }}>{g.name}</div>
+                        <div style={{ fontSize: 10, color: "#a5d6a7", textAlign: "center", fontFamily: "'Barlow',sans-serif", marginTop: 2 }}>{g.provider}</div>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5 }}>
+                          <span style={{ fontSize: 10, color: "#00e676" }}>{g.rtp}</span>
+                          <span style={{ fontSize: 10, color: "#ff9800" }}>🔴 {g.players.toLocaleString()}</span>
+                        </div>
+                        <div style={{ background: "#00c853", borderRadius: 6, padding: "5px 0", textAlign: "center", color: "#000", fontWeight: 700, fontSize: 11, marginTop: 8 }}>PLAY LIVE</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {casinoSec === "virtual" && (
+                <div style={{ padding: 14 }}>
+                  <div style={{ fontSize: 11, color: "#a5d6a7", marginBottom: 10, fontFamily: "'Barlow',sans-serif" }}>🎮 Computer-simulated sports running every few minutes</div>
+                  {VIRTUAL_SPORTS.map(g => (
+                    <div key={g.id} className="gcard" style={{ background: `linear-gradient(135deg,${g.color}33,#0f1f15)`, border: `1px solid ${g.color}55`, borderRadius: 12, padding: 14, marginBottom: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                        <div style={{ width: 54, height: 54, borderRadius: 12, background: `linear-gradient(135deg,${g.color},${g.color}88)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>{g.icon}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 17, fontWeight: 800 }}>{g.name}</div>
+                          <div style={{ fontSize: 11, color: "#a5d6a7", fontFamily: "'Barlow',sans-serif" }}>{g.desc}</div>
+                          <div style={{ display: "flex", gap: 8, marginTop: 3 }}>
+                            <span style={{ fontSize: 10, color: "#4a6a52" }}>{g.provider}</span>
+                            <span style={{ fontSize: 10, color: "#00e676" }}>RTP {g.rtp}</span>
+                          </div>
+                        </div>
+                        <div style={{ background: "#00c853", borderRadius: 8, padding: "7px 10px", color: "#000", fontWeight: 700, fontSize: 12, flexShrink: 0, cursor: "pointer" }}>PLAY</div>
+                      </div>
+                      <div style={{ display: "flex", gap: 5 }}>
+                        {g.id === "vhorses" || g.id === "vgreyhounds"
+                          ? ["1st","2nd","3rd","Field"].map(o => <div key={o} style={{ flex: 1, background: "#1a2e22", borderRadius: 6, padding: "6px 2px", textAlign: "center", border: "1px solid #2a4a32", cursor: "pointer" }}><div style={{ fontSize: 9, color: "#a5d6a7" }}>{o}</div><div style={{ fontSize: 12, fontWeight: 800 }}>{rand(2, 8).toFixed(2)}</div></div>)
+                          : ["Home", "Draw", "Away"].map(o => <div key={o} style={{ flex: 1, background: "#1a2e22", borderRadius: 6, padding: "6px 2px", textAlign: "center", border: "1px solid #2a4a32", cursor: "pointer" }}><div style={{ fontSize: 9, color: "#a5d6a7" }}>{o}</div><div style={{ fontSize: 12, fontWeight: 800 }}>{rand(1.5, 4).toFixed(2)}</div></div>)
+                        }
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {casinoSec === "slots" && (
+                <div style={{ padding: 14 }}>
+                  <div style={{ fontSize: 11, color: "#a5d6a7", marginBottom: 10, fontFamily: "'Barlow',sans-serif" }}>🎰 Spin to win huge multipliers</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    {SLOTS.map(g => (
+                      <div key={g.id} className="gcard" onClick={() => setActiveSlot(g)}
+                        style={{ background: "linear-gradient(160deg,#1a2e22,#0f1f15)", border: "1px solid #2a4a32", borderRadius: 12, padding: 12, position: "relative", overflow: "hidden" }}>
+                        {g.hot && <span style={{ position: "absolute", top: 8, right: 8, background: "#c62828", fontSize: 9, fontWeight: 800, padding: "2px 5px", borderRadius: 8, color: "#fff" }}>🔥HOT</span>}
+                        <div style={{ fontSize: 30, textAlign: "center", marginBottom: 6 }}>{g.icon}</div>
+                        <div style={{ fontSize: 12, fontWeight: 800, textAlign: "center" }}>{g.name}</div>
+                        <div style={{ fontSize: 10, color: "#a5d6a7", textAlign: "center", fontFamily: "'Barlow',sans-serif", marginTop: 2 }}>{g.provider}</div>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5 }}>
+                          <span style={{ fontSize: 10, color: "#00e676" }}>RTP {g.rtp}</span>
+                          <span style={{ fontSize: 10, color: "#ffd700" }}>{g.maxWin}</span>
+                        </div>
+                        <div style={{ background: "#00c853", borderRadius: 6, padding: "5px 0", textAlign: "center", color: "#000", fontWeight: 700, fontSize: 11, marginTop: 8 }}>SPIN NOW</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ═══ MY BETS ═══ */}
+      {activeTab === "mybets" && (
+        <div style={{ padding: 14 }}>
+          <div style={{ fontSize: 20, fontWeight: 900, marginBottom: 12 }}>🎫 My Bets</div>
+          <div style={{ display: "flex", gap: 6, marginBottom: 12, overflowX: "auto" }}>
+            {[{ id: "all", label: "All" }, { id: "pending", label: "⏳ Pending" }, { id: "won", label: "✅ Won" }, { id: "lost", label: "❌ Lost" }].map(f => (
+              <div key={f.id} onClick={() => setMyBetsFilter(f.id)} style={{ minWidth: "fit-content", padding: "5px 12px", borderRadius: 20, cursor: "pointer", fontSize: 12, fontWeight: 700, background: myBetsFilter === f.id ? "#00c853" : "#1a2e22", color: myBetsFilter === f.id ? "#000" : "#e8f5e9", border: myBetsFilter === f.id ? "none" : "1px solid #2a4a32" }}>{f.label}</div>
+            ))}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
+            {[{ label: "Total Bets", value: myBets.length }, { label: "Won", value: myBets.filter(b => b.status === "won").length, color: "#00e676" }, { label: "Total Won", value: `${myBets.filter(b => b.status === "won").reduce((s, b) => s + b.payout, 0).toFixed(0)}`, color: "#ffd700" }].map((s, i) => (
+              <div key={i} style={{ background: "#0f1f15", borderRadius: 8, padding: "10px 6px", textAlign: "center", border: "1px solid #1a2e22" }}>
+                <div style={{ fontSize: 18, fontWeight: 900, color: s.color || "#e8f5e9" }}>{s.value}</div>
+                <div style={{ fontSize: 9, color: "#a5d6a7", fontFamily: "'Barlow',sans-serif" }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+          {filteredMyBets.length === 0 && <div style={{ textAlign: "center", padding: "40px 0", opacity: 0.4, fontSize: 14 }}>No bets found</div>}
+          {filteredMyBets.map(b => (
+            <div key={b.id} style={{ background: "#0f1f15", borderRadius: 10, padding: 13, marginBottom: 8, border: `1px solid ${b.status === "won" ? "#00c85344" : b.status === "lost" ? "#c6282844" : "#2a4a32"}` }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 7 }}>
+                <div style={{ flex: 1, marginRight: 10 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 2, lineHeight: 1.3 }}>{b.teams}</div>
+                  <div style={{ fontSize: 11, color: "#a5d6a7", fontFamily: "'Barlow',sans-serif" }}>Pick: <b style={{ color: "#e8f5e9" }}>{b.pick}</b></div>
+                </div>
+                <span style={{ fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 20, flexShrink: 0, background: b.status === "won" ? "#00c853" : b.status === "lost" ? "#c62828" : "#f9a825", color: b.status === "pending" ? "#000" : "#fff" }}>{b.status.toUpperCase()}</span>
+              </div>
+              <div style={{ display: "flex", gap: 12, fontSize: 11, flexWrap: "wrap" }}>
+                <span style={{ color: "#a5d6a7" }}>📅 {b.date}</span>
+                <span style={{ color: "#a5d6a7" }}>Odds: <b style={{ color: "#ffd700" }}>{b.odds}</b></span>
+                <span style={{ color: "#a5d6a7" }}>Stake: <b>KES {b.stake}</b></span>
+              </div>
+              {b.status !== "lost" && (
+                <div style={{ marginTop: 6, fontSize: 12, color: "#a5d6a7" }}>
+                  {b.status === "won" ? "✅ Won" : "💰 Potential"}: <b style={{ color: "#00e676", fontSize: 15 }}>KES {b.payout.toFixed(2)}</b>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ═══ ACCOUNT ═══ - Enhanced */}
+      {activeTab === "account" && (
+        <div style={{ padding: 14 }}>
+          <div style={{ background: "#0f1f15", borderRadius: 12, padding: 18, border: "1px solid #1a2e22", marginBottom: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+              <div style={{ width: 52, height: 52, borderRadius: "50%", background: "linear-gradient(135deg,#00c853,#00e676)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 900, color: "#000" }}>J</div>
+              <div>
+                <div style={{ fontSize: 17, fontWeight: 700 }}>John Doe</div>
+                <div style={{ fontSize: 12, color: "#a5d6a7" }}>+254 700 000 000</div>
+                <div style={{ fontSize: 10, color: "#4a6a52", marginTop: 2 }}>Referral: {referralCode}</div>
+              </div>
+            </div>
+            <div style={{ background: "#1a2e22", borderRadius: 8, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <div>
+                <div style={{ fontSize: 10, color: "#a5d6a7" }}>BALANCE</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "#00e676" }}>KES {balance.toLocaleString("en-KE", { minimumFractionDigits: 2 })}</div>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <div onClick={() => setShowDepositModal(true)} style={{ background: "#00c853", borderRadius: 20, padding: "8px 18px", color: "#000", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>DEPOSIT</div>
+                <div onClick={requestWithdrawal} style={{ background: "#f9a825", borderRadius: 20, padding: "8px 18px", color: "#000", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>WITHDRAW</div>
+              </div>
+            </div>
+            {/* NEW: Quick stats */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <div style={{ background: "#1a2e22", borderRadius: 6, padding: "8px", textAlign: "center" }}>
+                <div style={{ fontSize: 11, color: "#a5d6a7" }}>Pending Bets</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "#ffd700" }}>{pendingCount}</div>
+              </div>
+              <div style={{ background: "#1a2e22", borderRadius: 6, padding: "8px", textAlign: "center" }}>
+                <div style={{ fontSize: 11, color: "#a5d6a7" }}>Winning Rate</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "#00e676" }}>
+                  {myBets.length > 0 ? Math.round((myBets.filter(b => b.status === "won").length / myBets.length) * 100) : 0}%
+                </div>
+              </div>
+            </div>
+          </div>
+          {[{ icon: "🎫", label: "My Bets", badge: pendingCount > 0 ? pendingCount : null, action: () => setActiveTab("mybets") }, 
+            { icon: "💰", label: "Transactions", action: () => showToast("Transaction history feature coming soon", "info") }, 
+            { icon: "🎁", label: "Bonus & Offers", action: () => showToast("Check your available bonuses", "info") }, 
+            { icon: "👥", label: "Referral Program", badge: "Earn KES 500", action: () => showToast(`Share code: ${referralCode}`, "info") }, 
+            { icon: "🔔", label: "Notifications", badge: notifications.filter(n => !n.read).length, action: () => setActiveTab("notifications") }, 
+            { icon: "⚙️", label: "Settings", action: () => setShowSettings(!showSettings) }, 
+            { icon: "❓", label: "Help & Support", action: () => setLiveChatOpen(true) }].map((item, i) => (
+            <div key={i} onClick={item.action} style={{ background: "#0f1f15", borderRadius: 8, padding: "14px 16px", marginBottom: 6, border: "1px solid #1a2e22", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", position: "relative" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 18 }}>{item.icon}</span>
+                <span style={{ fontSize: 14, fontWeight: 600 }}>{item.label}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {item.badge && <span style={{ background: "#c62828", borderRadius: 10, padding: "2px 6px", fontSize: 10, fontWeight: 700, color: "#fff" }}>{item.badge}</span>}
+                <span style={{ opacity: 0.4, fontSize: 18 }}>›</span>
+              </div>
+            </div>
+          ))}
+          
+          {/* NEW: Settings Panel */}
+          {showSettings && (
+            <div style={{ marginTop: 10, padding: 12, background: "#0f1f15", borderRadius: 8, border: "1px solid #1a2e22" }}>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>⚙️ Settings</div>
+              {[
+                { key: "notifications", label: "Push Notifications" },
+                { key: "soundEffects", label: "Sound Effects" },
+                { key: "autoClearBetslip", label: "Auto-clear betslip after bet" }
+              ].map(setting => (
+                <div key={setting.key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <span style={{ fontSize: 12 }}>{setting.label}</span>
+                  <div onClick={() => setSettings(prev => ({ ...prev, [setting.key]: !prev[setting.key] }))} style={{
+                    width: 40,
+                    height: 20,
+                    borderRadius: 10,
+                    background: settings[setting.key] ? "#00c853" : "#1a2e22",
+                    cursor: "pointer",
+                    position: "relative",
+                    transition: "all 0.2s"
+                  }}>
+                    <div style={{
+                      width: 16,
+                      height: 16,
+                      borderRadius: "50%",
+                      background: "#fff",
+                      position: "absolute",
+                      top: 2,
+                      left: settings[setting.key] ? 22 : 2,
+                      transition: "all 0.2s"
+                    }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* NEW: Notifications Tab */}
+      {activeTab === "notifications" && (
+        <div style={{ padding: 14 }}>
+          <div style={{ fontSize: 20, fontWeight: 900, marginBottom: 12 }}>🔔 Notifications</div>
+          {notifications.length === 0 && (
+            <div style={{ textAlign: "center", padding: "40px 0", opacity: 0.4, fontSize: 14 }}>No notifications yet</div>
+          )}
+          {notifications.map(notif => (
+            <div key={notif.id} style={{
+              background: notif.read ? "#0f1f15" : "#1a2e22",
+              borderRadius: 8,
+              padding: 12,
+              marginBottom: 8,
+              border: `1px solid ${notif.type === "win" ? "#00c853" : notif.type === "bet" ? "#f9a825" : "#2a4a32"}`
+            }}>
+              <div style={{ fontSize: 12, marginBottom: 4 }}>{notif.message}</div>
+              <div style={{ fontSize: 9, color: "#4a6a52" }}>
+                {new Date(notif.timestamp).toLocaleString()}
+              </div>
+            </div>
+          ))}
+          {notifications.length > 0 && (
+            <div onClick={() => setNotifications([])} style={{
+              textAlign: "center",
+              padding: "10px",
+              background: "#1a2e22",
+              borderRadius: 8,
+              fontSize: 12,
+              cursor: "pointer",
+              marginTop: 8
+            }}>Clear All</div>
+          )}
+        </div>
+      )}
+
+      {/* FLOATING BETSLIP */}
+      {betslip.length > 0 && !showBetslip && (
+        <div onClick={() => setShowBetslip(true)} style={{ position: "fixed", bottom: 70, right: 14, background: "linear-gradient(135deg,#00c853,#00e676)", borderRadius: 30, padding: "11px 18px", color: "#000", fontWeight: 800, fontSize: 13, cursor: "pointer", zIndex: 200, boxShadow: "0 4px 20px rgba(0,200,83,0.5)", display: "flex", alignItems: "center", gap: 7 }}>
+          🎫 BETSLIP
+          <span style={{ background: "#000", color: "#00e676", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900 }}>{betslip.length}</span>
+        </div>
+      )}
+
+      {/* BETSLIP PANEL - Enhanced with clear button */}
+      {showBetslip && (
+        <div className="bslide" style={{ position: "fixed", bottom: 60, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 420, background: "#0d2818", border: "2px solid #00c853", borderRadius: "16px 16px 0 0", zIndex: 300, maxHeight: "80vh", overflowY: "auto" }}>
+          <div style={{ padding: "11px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #1a2e22", position: "sticky", top: 0, background: "#0d2818" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span>🎫</span>
+              <span style={{ fontSize: 15, fontWeight: 800 }}>BETSLIP</span>
+              <span style={{ background: "#00c853", color: "#000", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900 }}>{betslip.length}</span>
+            </div>
+            <div style={{ display: "flex", gap: 12 }}>
+              <span onClick={clearBetslip} style={{ cursor: "pointer", fontSize: 12, opacity: 0.6 }}>Clear</span>
+              <span onClick={() => setShowBetslip(false)} style={{ cursor: "pointer", fontSize: 20, opacity: 0.5 }}>✕</span>
+            </div>
+          </div>
+          {betPlaced ? (
+            <div style={{ textAlign: "center", padding: "30px 20px" }}>
+              <div style={{ fontSize: 52, marginBottom: 10 }}>✅</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#00e676" }}>BET PLACED!</div>
+              <div style={{ fontSize: 12, color: "#a5d6a7", marginTop: 5 }}>Balance updated. Good luck!</div>
+            </div>
+          ) : (
+            <div style={{ padding: 13 }}>
+              {betslip.map(b => (
+                <div key={b.key} style={{ background: "#0f1f15", borderRadius: 8, padding: "9px 11px", marginBottom: 7, border: "1px solid #1a2e22", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 700 }}>{b.label}</div>
+                    <div style={{ fontSize: 10, color: "#a5d6a7", fontFamily: "'Barlow',sans-serif" }}>{b.home} vs {b.away}</div>
+                    <div style={{ fontSize: 10, color: "#4a6a52" }}>{b.league}</div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 15, fontWeight: 800, color: "#00e676" }}>{b.odd}</span>
+                    <span onClick={() => removeFromSlip(b.key)} style={{ color: "#ff5252", cursor: "pointer", fontSize: 15, fontWeight: 700 }}>✕</span>
+                  </div>
+                </div>
+              ))}
+              <div style={{ background: "#1a2e22", borderRadius: 8, padding: "10px 12px", marginBottom: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                  <span style={{ fontSize: 12, color: "#a5d6a7" }}>Total Odds</span>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: "#ffd700" }}>{totalOdds.toFixed(2)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 12, color: "#a5d6a7" }}>Potential Win</span>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: "#00e676" }}>KES {potentialWin}</span>
+                </div>
+              </div>
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ fontSize: 10, color: "#a5d6a7", marginBottom: 5 }}>STAKE (KES)</div>
+                <input type="number" placeholder="Min. KES 10" value={stakeInput} onChange={e => setStakeInput(e.target.value)}
+                  style={{ width: "100%", background: "#0a0f0d", border: "1px solid #00c853", borderRadius: 8, padding: "10px 12px", color: "#e8f5e9", fontSize: 16, fontWeight: 700, outline: "none" }} />
+                <div style={{ display: "flex", gap: 5, marginTop: 7 }}>
+                  {["50", "100", "200", "500"].map(v => (
+                    <div key={v} onClick={() => setStakeInput(v)} style={{ flex: 1, background: "#1a2e22", borderRadius: 6, padding: "5px 0", textAlign: "center", fontSize: 12, fontWeight: 700, cursor: "pointer", border: stakeInput === v ? "1px solid #00c853" : "1px solid #2a4a32", color: stakeInput === v ? "#00e676" : "#e8f5e9" }}>{v}</div>
+                  ))}
+                </div>
+              </div>
+              <div onClick={placeBet} style={{
+                background: betslip.length > 0 && stakeInput && parseFloat(stakeInput) >= 10 && parseFloat(stakeInput) <= balance ? "linear-gradient(135deg,#00c853,#00e676)" : "#1a2e22",
+                color: betslip.length > 0 && stakeInput && parseFloat(stakeInput) >= 10 && parseFloat(stakeInput) <= balance ? "#000" : "#4a6a52",
+                borderRadius: 10, padding: "13px 0", textAlign: "center", fontSize: 15, fontWeight: 800, cursor: "pointer", letterSpacing: 1,
+              }}>PLACE BET {stakeInput ? `• KES ${stakeInput}` : ""}</div>
+              {stakeInput && parseFloat(stakeInput) > balance && (
+                <div style={{ fontSize: 11, color: "#ff5252", textAlign: "center", marginTop: 8 }}>Insufficient balance!</div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* BOTTOM NAV - Added notifications badge */}
+      <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 420, background: "#0d2818", borderTop: "1px solid #1a2e22", display: "flex", zIndex: 150, height: 58 }}>
+        {[{ id: "home", icon: "🏠", label: "Home" }, { id: "jackpot", icon: "🏆", label: "Jackpot" }, { id: "casino", icon: "🎰", label: "Casino" }, { id: "mybets", icon: "🎫", label: "My Bets" }, { id: "account", icon: "👤", label: "Account" }].map(tab => (
+          <div key={tab.id} className="nav" onClick={() => { setActiveTab(tab.id); setShowBetslip(false); if (tab.id !== "casino") { setActiveCrashGame(null); setActiveSlot(null); } }}
+            style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1, cursor: "pointer", color: activeTab === tab.id ? "#00e676" : "#4a6a52", borderTop: activeTab === tab.id ? "2px solid #00c853" : "2px solid transparent", background: activeTab === tab.id ? "#0f1f15" : "none", position: "relative" }}>
+            {tab.id === "mybets" && pendingCount > 0 && <span style={{ position: "absolute", top: 5, right: "14%", background: "#c62828", borderRadius: "50%", width: 14, height: 14, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, fontWeight: 900, color: "#fff" }}>{pendingCount}</span>}
+            {tab.id === "account" && notifications.filter(n => !n.read).length > 0 && <span style={{ position: "absolute", top: 5, right: "10%", background: "#c62828", borderRadius: "50%", width: 8, height: 8 }} />}
+            <span style={{ fontSize: 17 }}>{tab.icon}</span>
+            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.3 }}>{tab.label}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{ height: 78 }} />
+      
+      {/* NEW: Live Chat Button */}
+      {!liveChatOpen && (
+        <div onClick={() => setLiveChatOpen(true)} style={{
+          position: "fixed",
+          bottom: 70,
+          left: 14,
+          background: "linear-gradient(135deg,#00c853,#00e676)",
+          borderRadius: "50%",
+          width: 48,
+          height: 48,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          zIndex: 200,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
+        }}>
+          <span style={{ fontSize: 24 }}>💬</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Add missing PROMOTIONS and SPORTS_LIST
+const PROMOTIONS = [
+  { id: 1, title: "KARIBU BONUS", desc: "100% Welcome Bonus up to KES 5,000", color: "#1a7a3c", badge: "NEW" },
+  { id: 2, title: "MEGA JACKPOT", desc: "Win KES 50,000,000 this weekend!", color: "#b8860b", badge: "HOT" },
+  { id: 3, title: "AVIATOR CASHBACK", desc: "50% Cashback on Aviator losses today", color: "#8b0000", badge: "OFFER" },
+];
+
+const SPORTS_LIST = [
+  { id: "football", label: "Football", icon: "⚽" },
+  { id: "basketball", label: "Basketball", icon: "🏀" },
+  { id: "tennis", label: "Tennis", icon: "🎾" },
+  { id: "rugby", label: "Rugby", icon: "🏉" },
+  { id: "cricket", label: "Cricket", icon: "🏏" },
+  { id: "boxing", label: "Boxing", icon: "🥊" },
+];
